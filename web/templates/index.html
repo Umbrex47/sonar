@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radar de Contenido 30X — Tendencias en IA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            slate: {
+              850: '#151d2e',
+              900: '#0f172a',
+              950: '#090e17',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #090e17;
+      color: #f1f5f9;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(21, 29, 46, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card:hover {
+      border-color: rgba(16, 185, 129, 0.3);
+      transform: translateY(-2px);
+    }
+    .glow-accent {
+      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.2);
+    }
+    /* Estilos de scrollbar personalizados */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090e17;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27354f;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b82f6;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+
+  <!-- Navbar Superior -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center font-extrabold text-slate-950 text-base shadow-lg shadow-brand-500/20">
+            30X
+          </div>
+          <div>
+            <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+              Radar de Contenido
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                TypeSafe Jev
+              </span>
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <!-- Selector de Reportes -->
+        <select id="reportSelector" onchange="loadSelectedReport()" class="bg-slate-900 border border-white/10 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-500">
+          <option value="latest">Cargando reportes...</option>
+        </select>
+
+        <!-- Botón Ver Base de Datos -->
+        <button onclick="toggleDbExplorer()" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-1.5 transition">
+          <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6m-4-3h8"></path>
+          </svg>
+          Explorador de Datos
+        </button>
+
+        <!-- Botón Ejecutar Radar -->
+        <button id="runBtn" onclick="triggerRun()" class="text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition">
+          <svg id="runIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span id="runText">Actualizar Radar</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- Hero / Métricas Ejecutivas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="glass-card rounded-xl p-4 flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg">
+          🎯
+        </div>
+        <div>
+          <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Semana Activa</div>
+          <div id="statSemana" class="text-lg font-bold text-white tracking-tight">2026-W42</div>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-4 flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-lg">
+          ⚡
+        </div>
+        <div>
+          <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Clusters Analizados</div>
+          <div id="statClusters" class="text-lg font-bold text-white tracking-tight">134 clusters</div>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-4 flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-lg">
+          🛡️
+        </div>
+        <div>
+          <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Calibración Jev</div>
+          <div class="text-lg font-bold text-white tracking-tight flex items-center gap-1.5">
+            RLCD System 1
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-4 flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-lg">
+          ⏱️
+        </div>
+        <div>
+          <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Filtro de Recencia</div>
+          <div class="text-lg font-bold text-emerald-400 tracking-tight">&lt; 7 días estrictos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <div class="glass-panel rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <!-- Buscador -->
+      <div class="relative w-full md:w-96">
+        <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input 
+          type="text" 
+          id="searchInput" 
+          oninput="filterTopics()"
+          placeholder="Buscar tema, palabra clave o tecnología..."
+          class="w-full bg-slate-900 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition"
+        >
+      </div>
+
+      <!-- Filtros Rápidos -->
+      <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <select id="filterFormato" onchange="filterTopics()" class="bg-slate-900 border border-white/10 text-slate-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500">
+          <option value="todos">Todos los Formatos</option>
+          <option value="video_corto">🎬 Video Corto / Reel</option>
+          <option value="carousel">📑 Carrusel</option>
+          <option value="hilo">🧵 Hilo X / LinkedIn</option>
+          <option value="articulo">📰 Artículo / Newsletter</option>
+        </select>
+
+        <select id="filterFase" onchange="filterTopics()" class="bg-slate-900 border border-white/10 text-slate-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500">
+          <option value="todas">Todas las Fases</option>
+          <option value="naciendo">🟢 Naciendo (Emergente)</option>
+          <option value="en_crecimiento">🔵 En Crecimiento</option>
+          <option value="saturado">🔴 Saturado</option>
+        </select>
+
+        <select id="filterFuente" onchange="filterTopics()" class="bg-slate-900 border border-white/10 text-slate-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500">
+          <option value="todas">Todas las Fuentes</option>
+          <option value="YouTube">YouTube</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Startups LatAm">Startups LatAm</option>
+          <option value="TechCrunch">TechCrunch</option>
+          <option value="HackerNews">Hacker News</option>
+          <option value="GitHub">GitHub</option>
+          <option value="GoogleNews">Google News</option>
+          <option value="HuggingFace">Hugging Face</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Contenedor del Listado del Top 10 -->
+    <div id="topicsContainer" class="space-y-4">
+      <div class="text-center py-12 text-slate-400">
+        <div class="inline-block animate-spin w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full mb-2"></div>
+        <p class="text-sm">Cargando tendencias y referencias de Radar30X...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal / Drawer de Explorador de Base de Datos -->
+  <div id="dbModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-5xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 border-b border-white/10 flex items-center justify-between bg-slate-850">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg">🗄️</span>
+          <h2 class="text-base font-bold text-white">Explorador de Base de Datos (SQLite)</h2>
+          <span id="dbItemCount" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-white/5">0 ítems</span>
+        </div>
+        <button onclick="toggleDbExplorer()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-4 border-b border-white/5 bg-slate-900/60 flex flex-wrap gap-3 items-center justify-between">
+        <input 
+          type="text" 
+          id="dbSearchInput" 
+          oninput="loadDbItems()" 
+          placeholder="Filtrar base de datos..." 
+          class="bg-slate-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-200 w-72 focus:outline-none focus:border-blue-500"
+        >
+        <select id="dbFuenteSelect" onchange="loadDbItems()" class="bg-slate-950 border border-white/10 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500">
+          <option value="todas">Todas las fuentes</option>
+          <option value="YouTube">YouTube</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="HackerNews">HackerNews</option>
+          <option value="GoogleNews">GoogleNews</option>
+          <option value="Startups LatAm">Startups LatAm</option>
+          <option value="TechCrunch AI">TechCrunch AI</option>
+          <option value="GitHub">GitHub</option>
+          <option value="HuggingFace">HuggingFace</option>
+        </select>
+      </div>
+
+      <div id="dbItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-2 divide-y divide-white/5 text-xs">
+        <p class="text-slate-400 text-center py-8">Cargando registros...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de Notificación -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-brand-500/40 text-brand-300 text-xs px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2 translate-y-24 opacity-0 transition-all duration-300">
+    <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    <span id="toastMsg">Copiado al portapapeles</span>
+  </div>
+
+  <!-- Scripts de Lógica del Cliente -->
+  <script>
+    let currentReport = null;
+    let allReports = [];
+
+    // Mapeo de colores y logos para fuentes
+    const SOURCE_COLORS = {
+      'youtube': 'bg-red-500/10 text-red-400 border-red-500/20',
+      'linkedin': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+      'hackernews': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      'github': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+      'googlenews': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+      'startups latam': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      'techcrunch ai': 'bg-green-500/10 text-green-400 border-green-500/20',
+      'huggingface': 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+      'tiktok': 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+      'instagram': 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20',
+      'default': 'bg-slate-700/30 text-slate-300 border-slate-600/30'
+    };
+
+    function getSourceBadgeClass(srcName) {
+      const clean = (srcName || '').toLowerCase().replace(' (captura)', '').trim();
+      return SOURCE_COLORS[clean] || SOURCE_COLORS['default'];
+    }
+
+    // Inicializar aplicación
+    async function init() {
+      await fetchReportsList();
+      await loadLatestReport();
+    }
+
+    // Obtener lista de reportes
+    async function fetchReportsList() {
+      try {
+        const res = await fetch('/api/reports');
+        const data = await res.json();
+        allReports = data.reports || [];
+        const selector = document.getElementById('reportSelector');
+        selector.innerHTML = '';
+        allReports.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.filename;
+          opt.textContent = `Semana: ${r.semana}`;
+          selector.appendChild(opt);
+        });
+      } catch (e) {
+        console.error('Error al listar reportes:', e);
+      }
+    }
+
+    // Cargar reporte más reciente
+    async function loadLatestReport() {
+      try {
+        const res = await fetch('/api/report/latest');
+        if (!res.ok) throw new Error('No hay reporte disponible');
+        currentReport = await res.json();
+        renderReport();
+      } catch (e) {
+        document.getElementById('topicsContainer').innerHTML = `
+          <div class="glass-card rounded-xl p-8 text-center text-slate-400">
+            <p class="text-base text-white font-semibold mb-2">No se encontró ningún reporte generado</p>
+            <p class="text-sm mb-4">Haz clic en "Actualizar Radar" para ejecutar el pipeline por primera vez.</p>
+          </div>
+        `;
+      }
+    }
+
+    // Cargar reporte seleccionado en dropdown
+    async function loadSelectedReport() {
+      const filename = document.getElementById('reportSelector').value;
+      try {
+        const res = await fetch(`/api/report/${filename}`);
+        currentReport = await res.json();
+        renderReport();
+      } catch (e) {
+        console.error('Error cargando reporte:', e);
+      }
+    }
+
+    // Renderizar reporte en el DOM
+    function renderReport() {
+      if (!currentReport) return;
+
+      document.getElementById('statSemana').textContent = currentReport.semana || '2026-W42';
+      document.getElementById('statClusters').textContent = `${currentReport.total_clusters_evaluados || 0} clusters`;
+
+      filterTopics();
+    }
+
+    // Filtrar y pintar tarjetas
+    function filterTopics() {
+      if (!currentReport || !currentReport.top_temas) return;
+
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const fmt = document.getElementById('filterFormato').value;
+      const fase = document.getElementById('filterFase').value;
+      const fuente = document.getElementById('filterFuente').value.toLowerCase();
+
+      const container = document.getElementById('topicsContainer');
+
+      const filtered = currentReport.top_temas.filter(item => {
+        // Filtro búsqueda
+        const matchQ = !q || 
+          item.tema.toLowerCase().includes(q) || 
+          (item.por_que && item.por_que.toLowerCase().includes(q)) || 
+          (item.adaptacion_30x && item.adaptacion_30x.toLowerCase().includes(q));
+
+        // Filtro formato
+        const matchFmt = fmt === 'todos' || item.formato === fmt;
+
+        // Filtro fase
+        const matchFase = fase === 'todas' || item.fase === fase;
+
+        // Filtro fuente
+        const matchFuente = fuente === 'todas' || (item.fuentes || []).some(f => f.toLowerCase().includes(fuente));
+
+        return matchQ && matchFmt && matchFase && matchFuente;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="glass-card rounded-xl p-8 text-center text-slate-400">
+            <p class="text-sm">No hay tendencias que coincidan con los filtros seleccionados.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(t => renderTopicCard(t)).join('');
+    }
+
+    // Renderizar tarjeta individual de tendencia
+    function renderTopicCard(t) {
+      const rankGradients = [
+        'from-amber-400 to-yellow-500 text-slate-950', // #1
+        'from-slate-200 to-slate-400 text-slate-950',  // #2
+        'from-amber-600 to-amber-700 text-white',      // #3
+      ];
+      const rankStyle = rankGradients[t.posicion - 1] || 'from-slate-800 to-slate-900 text-slate-300 border border-white/10';
+
+      const faseBadge = t.fase === 'naciendo' 
+        ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Naciendo</span>'
+        : (t.fase === 'en_crecimiento' 
+          ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> En crecimiento</span>'
+          : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Saturado</span>');
+
+      const formatBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-white/10">Formato: ${t.formato}</span>`;
+      const hookBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Gancho: ${t.gancho.replace('_', ' ')}</span>`;
+
+      const fuentesHtml = (t.fuentes || []).map(f => {
+        const cls = getSourceBadgeClass(f);
+        return `<span class="px-2 py-0.5 rounded text-[11px] font-medium border ${cls}">${f}</span>`;
+      }).join(' ');
+
+      // Referencias y evidencias
+      const referencias = t.referencias_detalladas || (t.evidencia || []).map(u => ({
+        url: u,
+        titulo: u,
+        fuente: 'Enlace externo',
+        autor: '',
+        fecha: 'Octubre 2026',
+        metricas: {}
+      }));
+
+      const refsHtml = referencias.map((ref, idx) => {
+        const refSrcClass = getSourceBadgeClass(ref.fuente);
+        const metricasStr = ref.metricas && Object.keys(ref.metricas).length > 0 
+          ? Object.entries(ref.metricas).map(([k, v]) => `${k}: ${v}`).join(' • ')
+          : '';
+
+        return `
+          <div class="p-3 rounded-lg bg-slate-900/90 border border-white/5 hover:border-white/15 transition flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${refSrcClass}">${ref.fuente}</span>
+                ${ref.autor ? `<span class="text-slate-400 text-[11px] truncate">Por: ${ref.autor}</span>` : ''}
+                ${ref.fecha ? `<span class="text-slate-500 text-[11px]">• ${ref.fecha}</span>` : ''}
+              </div>
+              <a href="${ref.url}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-slate-200 hover:text-brand-400 transition flex items-center gap-1.5 group">
+                <span class="truncate">${ref.titulo}</span>
+                <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-brand-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+              </a>
+              ${metricasStr ? `<div class="text-[10px] text-emerald-400/80 mt-0.5 font-mono">${metricasStr}</div>` : ''}
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
+              <button onclick="copyToClipboard('${ref.url}', 'Enlace copiado')" class="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition" title="Copiar enlace">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+              </button>
+              <a href="${ref.url}" target="_blank" rel="noopener noreferrer" class="text-xs bg-slate-800 hover:bg-brand-600 hover:text-white text-slate-300 px-2.5 py-1.5 rounded border border-white/10 flex items-center gap-1 transition">
+                <span>Abrir fuente</span>
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <!-- Cabecera de la Tarjeta -->
+          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div class="flex items-start space-x-3.5">
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br ${rankStyle} font-extrabold flex items-center justify-center text-sm shadow-md flex-shrink-0">
+                #${t.posicion}
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white tracking-tight leading-snug">${t.tema}</h3>
+                <div class="flex flex-wrap items-center gap-2 mt-2">
+                  ${faseBadge}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">${t.crecimiento}</span>
+                  ${formatBadge}
+                  ${hookBadge}
+                  <span class="text-xs text-slate-400 font-mono">Confianza Jev: ${(t.confianza_jev * 100).toFixed(0)}%</span>
+                  <span class="text-xs text-slate-400 font-mono">Encaje: ${(t.encaje_audiencia * 100).toFixed(0)}%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Fuentes Validadas -->
+            <div class="flex flex-wrap sm:justify-end gap-1.5">
+              ${fuentesHtml}
+            </div>
+          </div>
+
+          <!-- Grid de Por Qué y Adaptación 30X -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+            <!-- Por qué funciona -->
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-white/5 space-y-2">
+              <div class="text-[11px] uppercase tracking-wider font-bold text-slate-400 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                ¿Por qué funciona esta tendencia?
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">${t.por_que}</p>
+            </div>
+
+            <!-- Adaptación 30X -->
+            <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-950/40 to-slate-900/80 border border-emerald-500/20 space-y-2 relative group">
+              <div class="flex items-center justify-between">
+                <div class="text-[11px] uppercase tracking-wider font-bold text-emerald-400 flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                  Adaptación Editorial 30X
+                </div>
+                <button onclick="copyToClipboard('${t.adaptacion_30x.replace(/'/g, "\\'")}', 'Propuesta editorial copiada')" class="text-[11px] text-emerald-400 hover:text-white flex items-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded transition">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                  </svg>
+                  Copiar Propuesta
+                </button>
+              </div>
+              <p class="text-xs text-emerald-100 font-medium leading-relaxed">${t.adaptacion_30x}</p>
+            </div>
+          </div>
+
+          <!-- SECCIÓN DE REFERENCIAS Y EVIDENCIAS -->
+          <div class="pt-2 border-t border-white/5">
+            <details class="group" open>
+              <summary class="cursor-pointer text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-between py-1 select-none">
+                <span class="flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                  </svg>
+                  Referencias y Evidencias de esta Tendencia (${referencias.length})
+                </span>
+                <span class="text-[11px] text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div class="mt-3 space-y-2">
+                ${refsHtml}
+              </div>
+            </details>
+          </div>
+        </div>
+      `;
+    }
+
+    // Modal de Base de Datos
+    async function toggleDbExplorer() {
+      const modal = document.getElementById('dbModal');
+      if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        await loadDbItems();
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    async function loadDbItems() {
+      const search = document.getElementById('dbSearchInput').value;
+      const fuente = document.getElementById('dbFuenteSelect').value;
+      const container = document.getElementById('dbItemsContainer');
+
+      try {
+        let url = `/api/items?limit=150`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (fuente && fuente !== 'todas') url += `&fuente=${encodeURIComponent(fuente)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        document.getElementById('dbItemCount').textContent = `${data.total} ítems`;
+
+        if (data.items.length === 0) {
+          container.innerHTML = `<p class="text-slate-400 text-center py-8">No se encontraron registros en SQLite.</p>`;
+          return;
+        }
+
+        container.innerHTML = data.items.map(it => {
+          const cls = getSourceBadgeClass(it.fuente);
+          return `
+            <div class="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${cls}">${it.fuente}</span>
+                  <span class="text-slate-400 text-[11px] truncate">${it.autor}</span>
+                  <span class="text-slate-500 text-[11px]">• ${it.fecha || 'Octubre 2026'}</span>
+                </div>
+                <a href="${it.url}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-slate-200 hover:text-blue-400 transition truncate block">
+                  ${it.titulo}
+                </a>
+              </div>
+              <a href="${it.url}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:text-blue-300 underline flex-shrink-0">
+                Ver fuente original →
+              </a>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = `<p class="text-red-400 text-center py-8">Error cargando ítems de la base de datos.</p>`;
+      }
+    }
+
+    // Ejecutar Radar en segundo plano
+    async function triggerRun() {
+      const btn = document.getElementById('runBtn');
+      const text = document.getElementById('runText');
+      const icon = document.getElementById('runIcon');
+
+      btn.disabled = true;
+      btn.classList.add('opacity-70', 'cursor-not-allowed');
+      text.textContent = 'Ejecutando Pipeline...';
+      icon.classList.add('animate-spin');
+
+      showToast('Iniciando escaneo de 8 fuentes y calibración Jev...');
+
+      try {
+        const res = await fetch('/api/run', { method: 'POST' });
+        const data = await res.json();
+
+        // Polling de estado cada 3 segundos
+        const interval = setInterval(async () => {
+          try {
+            const stRes = await fetch('/api/status');
+            const st = await stRes.json();
+            if (!st.is_running) {
+              clearInterval(interval);
+              btn.disabled = false;
+              btn.classList.remove('opacity-70', 'cursor-not-allowed');
+              text.textContent = 'Actualizar Radar';
+              icon.classList.remove('animate-spin');
+
+              if (st.last_status === 'success') {
+                showToast('Radar completado con éxito. Actualizando vista...');
+                await fetchReportsList();
+                await loadLatestReport();
+              } else {
+                showToast('Error en la ejecución del radar: ' + (st.last_error || 'Error'));
+              }
+            }
+          } catch (err) {
+            console.error('Error en polling:', err);
+          }
+        }, 3000);
+
+      } catch (e) {
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed');
+        text.textContent = 'Actualizar Radar';
+        icon.classList.remove('animate-spin');
+        showToast('Error al conectar con el servidor.');
+      }
+    }
+
+    // Utilidad: Copiar al portapapeles con toast
+    function copyToClipboard(text, msg = 'Copiado al portapapeles') {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(msg);
+      }).catch(err => {
+        console.error('Error al copiar:', err);
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.textContent = msg;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3500);
+    }
+
+    // Iniciar al cargar
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

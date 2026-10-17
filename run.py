@@ -312,6 +312,11 @@ def main() -> None:
     # Demo
     subparsers.add_parser("demo", help="Mostrar reporte precalculado para pitch a prueba de fallos")
 
+    # Serve
+    serve_parser = subparsers.add_parser("serve", help="Iniciar servidor web con panel interactivo")
+    serve_parser.add_argument("--port", type=int, default=8080, help="Puerto del servidor web (default: 8080)")
+    serve_parser.add_argument("--host", type=str, default="0.0.0.0", help="Host del servidor (default: 0.0.0.0)")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -319,6 +324,11 @@ def main() -> None:
 
     if args.command == "demo":
         show_demo_sample()
+        return
+
+    if args.command == "serve":
+        from web.server import run_server
+        run_server(host=args.host, port=args.port)
         return
 
     db = Database()
