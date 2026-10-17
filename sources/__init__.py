@@ -12,6 +12,8 @@ from sources.medium import MediumSource
 from sources.github import GitHubSource
 from sources.reddit import RedditSource
 from sources.manual import ManualCSVSource
+from sources.huggingface import HuggingFaceSource
+from sources.newsletters import NewslettersSource
 
 __all__ = [
     "BaseSource",
@@ -23,6 +25,8 @@ __all__ = [
     "GitHubSource",
     "RedditSource",
     "ManualCSVSource",
+    "HuggingFaceSource",
+    "NewslettersSource",
     "get_default_sources",
 ]
 
@@ -33,6 +37,8 @@ def get_default_sources(include_optional: bool = True) -> List[BaseSource]:
         HackerNewsSource(),
         YouTubeSource(),
         GoogleNewsSource(),
+        NewslettersSource(),
+        HuggingFaceSource(),
         MediumSource(),
         GitHubSource(),
         ManualCSVSource(),

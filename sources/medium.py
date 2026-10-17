@@ -41,15 +41,23 @@ class MediumSource(BaseSource):
                             continue
 
                         feed = feedparser.parse(resp.content)
-                        for entry in feed.entries[: limit // len(self.FEED_URLS) + 5]:
+                        ai_keywords = [
+                            "ai", "ia", "agent", "llm", "slm", "model", "rag",
+                            "architecture", "enterprise", "prompt", "machine learning",
+                            "deep learning", "neural", "automatiz", "datos", "data"
+                        ]
+                        for entry in feed.entries[: limit // len(self.FEED_URLS) + 10]:
                             title = getattr(entry, "title", "")
-                            if not title:
+                            summary = getattr(entry, "summary", "")
+                            combined_text = f"{title} {summary}".lower()
+
+                            # Filtrar solo piezas con relevancia técnica / IA
+                            if not any(k in combined_text for k in ai_keywords):
                                 continue
 
                             link = getattr(entry, "link", "")
                             author = getattr(entry, "author", "Medium Writer")
                             published = getattr(entry, "published", "")
-                            summary = getattr(entry, "summary", "")
 
                             item_id = hashlib.sha256(f"medium:{link}".encode()).hexdigest()[:16]
 

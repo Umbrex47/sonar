@@ -98,13 +98,15 @@ flowchart TD
 
 | Orden | Fuente | Método | Requiere Key | Qué aporta al radar |
 |---|---|---|---|---|
-| 1 | **Hacker News** | Algolia Search API | No | Señales tempranas de desarrolladores y debates tech |
+| 1 | **Hacker News** | Algolia Search API (`search_by_date`) | No | Señales tempranas de desarrolladores y debates tech en tiempo real |
 | 2 | **YouTube** | Data API v3 (search + videos) | Opcional | **Única fuente cuantitativa de formato** (vistas/hora, shorts vs long form) |
 | 3 | **Google News** | RSS (`news.google.com/rss`) | No | Actualidad corporativa en español y cobertura LatAm |
-| 4 | **Medium** | RSS (`/feed/tag/artificial-intelligence`) | No | Artículos de análisis profundo y casos de adopción |
-| 5 | **GitHub** | Search API (`topic:ai created:>14d`) | No | Nuevas herramientas y frameworks adoptados velozmente |
-| 6 | **Manual CSV** | Captura asistida (`data/manual.csv`) | No | Señales de LinkedIn/TikTok/IG de forma 100% legal |
-| 7 | **Reddit** | API pública / OAuth | Opcional | Señal de discusión comunitaria y saturación de debate |
+| 4 | **Newsletters** | Feeds RSS (*The Rundown*, *Startups LatAm*, *Rest of World*) | No | Curaduría ejecutiva de alto nivel y señales de inversión/startups |
+| 5 | **Hugging Face** | Hub Trending Models & Daily Papers API | No | **Tracción de modelos open-source** y papers más votados por la comunidad |
+| 6 | **Medium** | RSS (`/feed/tag/artificial-intelligence`) | No | Artículos de análisis profundo y casos de adopción |
+| 7 | **GitHub** | Search API (`topic:ai created:>14d`) | No | Nuevas herramientas y frameworks adoptados velozmente |
+| 8 | **Manual CSV** | Captura asistida (`data/manual.csv`) | No | Señales de LinkedIn/TikTok/IG de forma 100% legal |
+| 9 | **Reddit** | API pública / OAuth | Opcional | Señal de discusión comunitaria y saturación de debate |
 
 ---
 

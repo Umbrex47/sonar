@@ -60,15 +60,16 @@ def calculate_topic_score(cluster: TopicCluster, decision: ClusterDecision) -> T
     # 3. Penalización por Saturación
     saturacion_penalidad = 0.30 if decision.fase == "saturado" else 0.0
 
-    # 4. Fórmula Ponderada con Confianza de Jev
-    confianza = decision.confianza
-    raw_weighted = (
-        0.35 * (crecimiento_norm * confianza)
-        + 0.25 * (decision.novedad * confianza)
-        + 0.20 * (multifuente_norm * confianza)
-        + 0.20 * (decision.encaje_audiencia * confianza)
-        - saturacion_penalidad
+    # 4. Fórmula Ponderada con Confianza Calibrada de Jev
+    # La confianza pondera cada señal sin anular arbitrariamente señales emergentes
+    conf_factor = 0.45 + (0.55 * decision.confianza)
+    base_signal = (
+        0.35 * crecimiento_norm
+        + 0.25 * decision.novedad
+        + 0.20 * multifuente_norm
+        + 0.20 * decision.encaje_audiencia
     )
+    raw_weighted = (base_signal * conf_factor) - saturacion_penalidad
 
     final_score = round(max(raw_weighted, 0.01), 3)
     return final_score, crecimiento_label

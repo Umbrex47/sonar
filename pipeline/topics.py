@@ -38,13 +38,38 @@ class TopicCluster(BaseModel):
         return [item.url for item in self.items[:n]]
 
 
-def clean_topic_phrase(title: str) -> str:
-    """Limpia ruido de titulares para obtener una frase-tema más canónica."""
-    # Remover patrones de YouTube tipo [Tutorial], (2026), #Shorts, etc.
+def clean_topic_phrase(title: str, summary: str = "") -> str:
+    """Extrae la frase-tema canónica identificando conceptos de tendencia de IA en 2026."""
+    text = f"{title} {summary}".lower()
+
+    # Mapeo a conceptos canónicos clave de tendencias de IA en 2026
+    if any(k in text for k in ["rpa", "workflow", "operations", "operacion", "conciliaci", "prospecc"]) and any(k in text for k in ["agent", "agente", "ia", "ai", "automatiz"]):
+        return "Agentes Autónomos en Operaciones y Reemplazo de RPA"
+
+    if any(k in text for k in ["sandbox", "airlock", "jailbreak", "guardrail", "netlumi", "agent37", "vulnerab"]) and any(k in text for k in ["agent", "agente", "ia", "ai", "security", "seguridad"]):
+        return "Sandboxing, Seguridad y Trazabilidad de Agentes de IA"
+
+    if any(k in text for k in ["claude code", "codex", "merlin", "coding agent", "shadowclone", "cursor", "replit", "rdst"]):
+        return "Coding Agents y Automatización del Desarrollo de Software"
+
+    if any(k in text for k in ["qwen", "deepseek", "slm", "small language", "open-source", "open-weight", "nemotron", "sam3", "drama-3", "embeddinggemma"]):
+        return "Modelos de Razonamiento Open Source y SLMs Especializados"
+
+    if any(k in text for k in ["empleo", "mexicanas", "méxico", 'mexico', "colombia", "chile", "latam", "bradesco", "talento"]) and any(k in text for k in ["empresa", "adopción", "adopcion", "ia", "inteligencia artificial"]):
+        return "Adopción Corporativa de IA y Transformación Laboral en LatAm"
+
+    if any(k in text for k in ["compliance", "auditor", "regulac", "sesgo", "normativ"]) and any(k in text for k in ["ia", "ai", "legal", "rrhh", "recursos humanos"]):
+        return "Gobernanza, Compliance y Auditoría de IA en Empresas"
+
+    if any(k in text for k in ["memoria", "memory", "persist", "vector", "local ai", "base local"]) and any(k in text for k in ["agent", "agente", "ia"]):
+        return "Agentes de IA con Memoria Persistente y Bases Locales"
+
+    if any(k in text for k in ["pika", "video studio", "generative video", "watermelon", "audio visual", "musica ia"]):
+        return "Generación Multimodal y Agentes Audiovisuales"
+
+    # Limpieza estándar si es un tema nuevo o especializado
     cleaned = re.sub(r"\[.*?\]|\(.*?\)|#\w+", "", title)
-    # Remover prefijos comunes como 'Show HN:', 'Ask HN:', 'Herramienta:'
     cleaned = re.sub(r"^(Show HN:|Ask HN:|Herramienta:|HN:|Notice:)\s*", "", cleaned, flags=re.I)
-    # Remover puntuación excedente
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned if len(cleaned) > 8 else title.strip()
 
@@ -65,7 +90,7 @@ def cluster_items(
     clusters: List[TopicCluster] = []
 
     for item in items:
-        topic_phrase = clean_topic_phrase(item.titulo)
+        topic_phrase = clean_topic_phrase(item.titulo, item.resumen)
         matched_cluster: TopicCluster = None
 
         for c in clusters:

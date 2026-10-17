@@ -18,14 +18,20 @@ class HackerNewsSource(BaseSource):
     """Adaptador para recolectar historias técnicas relevantes de IA en Hacker News."""
 
     name: str = "HackerNews"
-    BASE_URL: str = "https://hn.algolia.com/api/v1/search"
+    BASE_URL: str = "https://hn.algolia.com/api/v1/search_by_date"
 
     def fetch(self, limit: int = 50) -> List[RawItem]:
-        """Consulta historias recientes y destacadas con etiquetas de IA."""
+        """Consulta historias recientes y destacadas con etiquetas de IA dentro de la ventana actual."""
+        import time
+
         items: List[RawItem] = []
+        # Ventana de los últimos 14 días para asegurar actualidad estricta en 2026
+        two_weeks_ago = int(time.time()) - (14 * 86400)
+
         queries = [
-            "AI OR LLM OR 'artificial intelligence'",
-            "agentic OR 'AI agent'",
+            "AI agent OR agentic",
+            "LLM OR 'small language model' OR SLM",
+            "local AI OR 'enterprise AI'",
         ]
 
         try:
@@ -34,7 +40,8 @@ class HackerNewsSource(BaseSource):
                     params = {
                         "query": q,
                         "tags": "story",
-                        "hitsPerPage": min(limit // len(queries) + 10, 50),
+                        "numericFilters": f"created_at_i>{two_weeks_ago}",
+                        "hitsPerPage": min(limit // len(queries) + 10, 40),
                     }
                     response = client.get(self.BASE_URL, params=params)
                     if response.status_code != 200:

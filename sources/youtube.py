@@ -59,10 +59,10 @@ class YouTubeSource(BaseSource):
         items: List[RawItem] = []
         try:
             with httpx.Client(timeout=self.timeout) as client:
-                # 1. Search videos recientes sobre IA
+                # 1. Search videos recientes sobre IA con foco empresarial y agentes
                 search_params = {
                     "part": "snippet",
-                    "q": "inteligencia artificial IA novedades",
+                    "q": "agentes de IA operaciones empresas automatizacion",
                     "type": "video",
                     "order": "date",
                     "maxResults": min(limit, 50),
@@ -155,18 +155,18 @@ class YouTubeSource(BaseSource):
         now = datetime.now(timezone.utc).isoformat()
         samples = [
             (
-                "Agentes de IA con memoria persistente en 60 segundos",
-                "Tutorial ultra-rápido demostrando cómo conectar bases vectoriales locales a agentes para empresas.",
-                "DotCSV",
-                42300,
-                3800,
-                320,
+                "Agentes autónomos de IA con memoria persistente para operaciones en empresas",
+                "Tutorial práctico demostrando cómo conectar bases locales y memoria a agentes operativos para reducir costos de tokens.",
+                "DotCSV Tech",
+                34200,
+                3100,
+                290,
                 "video_corto",
-                480.5,
+                395.0,
             ),
             (
-                "Por qué los modelos locales están superando a las APIs en tareas operativas",
-                "Comparativa práctica de costos de inferencia y privacidad de datos para organizaciones de LatAm.",
+                "Modelos SLM calibrados vs modelos gigantes: Reducción del 85% de costos de inferencia",
+                "Análisis de costos y privacidad de datos para organizaciones de LatAm que evalúan modelos locales.",
                 "Carlos Alarcón AI",
                 18900,
                 1420,
@@ -175,14 +175,14 @@ class YouTubeSource(BaseSource):
                 195.0,
             ),
             (
-                "DeepSeek vs Claude 3.5: Cuál implementar en tu empresa este mes",
-                "Análisis de costo-beneficio para directores de tecnología y gerentes de innovación.",
-                "Midudev Tech",
-                58200,
-                4600,
-                580,
-                "long_form",
-                610.2,
+                "Por qué los directores de tecnología están reemplazando RAG tradicional por agentes type-safe",
+                "Demostración de gobernanza de datos y eliminación de alucinaciones en flujos corporativos críticos.",
+                "Tech Leaders LatAm",
+                28400,
+                2600,
+                340,
+                "video_corto",
+                320.0,
             ),
         ]
         items = []
