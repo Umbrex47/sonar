@@ -283,14 +283,21 @@ class RadarHTTPHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
         params = parse_qs(parsed.query)
+
+        # 0. API: Enfoques de Búsqueda
+        if path == "/api/focuses":
+            from pipeline.focuses import load_focuses
+            focuses = load_focuses()
+            self._send_json({"focuses": [f.model_dump() for f in focuses]})
+            return
 
         # 1. API: Listar reportes
         if path == "/api/reports":
@@ -362,6 +369,55 @@ class RadarHTTPHandler(BaseHTTPRequestHandler):
                 self._send_json({"status": "started", "message": "Radar iniciado en segundo plano."})
             else:
                 self._send_json({"status": "already_running", "message": "Una ejecución ya está en curso."}, status=409)
+            return
+
+        # Crear nuevo enfoque de búsqueda
+        if path == "/api/focuses":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_length).decode("utf-8")
+                data = json.loads(body)
+                from pipeline.focuses import add_focus
+                new_f = add_focus(
+                    nombre=data.get("nombre", ""),
+                    categoria=data.get("categoria", "general"),
+                    keywords=data.get("keywords", []),
+                    descripcion=data.get("descripcion", ""),
+                )
+                self._send_json({"status": "created", "focus": new_f.model_dump()}, status=201)
+            except Exception as e:
+                self._send_json({"error": f"Error al procesar solicitud: {e}"}, status=400)
+            return
+
+        # Alternar estado activo de enfoque (/api/focuses/<id>/toggle)
+        if path.startswith("/api/focuses/") and path.endswith("/toggle"):
+            focus_id = path.replace("/api/focuses/", "").replace("/toggle", "")
+            from pipeline.focuses import toggle_focus
+            updated = toggle_focus(focus_id)
+            if updated:
+                self._send_json({"status": "updated", "focus": updated.model_dump()})
+            else:
+                self._send_json({"error": f"Enfoque '{focus_id}' no encontrado."}, status=404)
+            return
+
+        self.send_error(404, "Ruta no encontrada")
+
+    def do_PATCH(self) -> None:
+        # Permitir PATCH para toggle también
+        self.do_POST()
+
+    def do_DELETE(self) -> None:
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path.startswith("/api/focuses/"):
+            focus_id = path.replace("/api/focuses/", "").strip("/")
+            from pipeline.focuses import delete_focus
+            deleted = delete_focus(focus_id)
+            if deleted:
+                self._send_json({"status": "deleted", "id": focus_id})
+            else:
+                self._send_json({"error": f"Enfoque '{focus_id}' no encontrado."}, status=404)
             return
 
         self.send_error(404, "Ruta no encontrada")

@@ -63,7 +63,7 @@ class YouTubeSource(BaseSource):
                 seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
                 search_params = {
                     "part": "snippet",
-                    "q": "agentes de IA operaciones empresas automatizacion",
+                    "q": "(agentes de IA OR OpenAI OR Anthropic OR benchmarks IA OR CEO) empresas automatización",
                     "type": "video",
                     "order": "date",
                     "publishedAfter": seven_days_ago,

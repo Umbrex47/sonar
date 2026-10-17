@@ -61,6 +61,22 @@ def clean_topic_phrase(title: str, summary: str = "") -> str:
     if any(k in text for k in ["compliance", "auditor", "regulac", "sesgo", "normativ"]) and any(k in text for k in ["ia", "ai", "legal", "rrhh", "recursos humanos"]):
         return "Gobernanza, Compliance y Auditoría de IA en Empresas"
 
+    # Polémicas de Labs: Anthropic, OpenAI, despidos de seguridad, demandas, rupturas
+    if any(k in text for k in ["anthropic", "openai", "sam altman", "dario amodei", "fired safety", "whistleblower", "lawsuit", "demandas", "copyright", "ruptura"]) and any(k in text for k in ["ai", "ia", "safety", "seguridad", "replit", "controversia", "polémica", "polemica"]):
+        return "Polémicas y Gobernanza de Grandes Labs (OpenAI / Anthropic)"
+
+    # Benchmarks & Model Race
+    if any(k in text for k in ["benchmark", "swe-bench", "evals", "evaluaci", "reasoning benchmark", "o3", "deepseek v3", "math benchmark"]) and any(k in text for k in ["ai", "ia", "model", "modelo", "score", "rendimiento", "inferencia"]):
+        return "Benchmarks y Carrera de Modelos de Razonamiento (o3 vs Claude vs DeepSeek)"
+
+    # Desarrollo Personal como CEO & Liderazgo Tecnológico
+    if any(k in text for k in ["ceo", "liderazgo", "leadership", "founder", "directivo", "director"]) and any(k in text for k in ["desarrollo personal", "productividad", "toma de decisiones", "cultura", "mental model", "gestión", "gestion", "mindset"]):
+        return "Desarrollo Personal de CEO y Liderazgo Estratégico con IA"
+
+    # Oportunidades de Negocio y ROI
+    if any(k in text for k in ["roi", "retorno de inversión", "retorno de inversion", "oportunidades", "oportunidad", "monetizaci", "reducción de costos", "reduccion de costos"]) and any(k in text for k in ["empresa", "negocio", "ia", "ai", "banca", "fintech"]):
+        return "Oportunidades de Negocio y Retorno de Inversión (ROI) en IA"
+
     if any(k in text for k in ["memoria", "memory", "persist", "vector", "local ai", "base local"]) and any(k in text for k in ["agent", "agente", "ia"]):
         return "Agentes de IA con Memoria Persistente y Bases Locales"
 

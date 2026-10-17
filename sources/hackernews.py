@@ -32,7 +32,16 @@ class HackerNewsSource(BaseSource):
             "AI agent OR agentic",
             "LLM OR 'small language model' OR SLM",
             "local AI OR 'enterprise AI'",
+            "Anthropic OR OpenAI OR benchmark",
+            "AI CEO OR 'AI leadership' OR 'AI ROI'",
         ]
+        try:
+            from pipeline.focuses import get_active_queries
+            extra_q = get_active_queries()
+            if extra_q:
+                queries.extend(extra_q[:2])
+        except Exception:
+            pass
 
         try:
             with httpx.Client(timeout=self.timeout) as client:

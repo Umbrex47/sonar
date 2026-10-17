@@ -102,6 +102,36 @@ def test_web_server_endpoints():
             assert res_status.status_code == 200
             status_json = res_status.json()
             assert "is_running" in status_json
+
+            # 6. API Focuses
+            res_foc = client.get("/api/focuses")
+            assert res_foc.status_code == 200
+            foc_json = res_foc.json()
+            assert "focuses" in foc_json
+            assert len(foc_json["focuses"]) >= 4
+
+            # 7. Add Focus
+            new_f_payload = {
+                "nombre": "Test Focus",
+                "categoria": "polemicas",
+                "keywords": ["test1", "test2"],
+                "descripcion": "Descripción de prueba",
+            }
+            res_add = client.post("/api/focuses", json=new_f_payload)
+            assert res_add.status_code == 201
+            created = res_add.json()["focus"]
+            assert created["nombre"] == "Test Focus"
+            f_id = created["id"]
+
+            # 8. Toggle Focus
+            res_tog = client.post(f"/api/focuses/{f_id}/toggle")
+            assert res_tog.status_code == 200
+            assert res_tog.json()["focus"]["activo"] is False
+
+            # 9. Delete Focus
+            res_del = client.delete(f"/api/focuses/{f_id}")
+            assert res_del.status_code == 200
+            assert res_del.json()["status"] == "deleted"
     finally:
         server.shutdown()
         server.server_close()

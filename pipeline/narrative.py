@@ -73,6 +73,22 @@ def _generate_narrative_template(cluster: TopicCluster, decision: ClusterDecisio
         adaptacion = (
             "Carrusel infográfico: 'Alerta legal para directores de talento: 4 requisitos de auditoría de IA que entran en vigor este año en la región'."
         )
+    elif "polémica" in tema_lower or "polemica" in tema_lower or "anthropic" in tema_lower or "openai" in tema_lower:
+        adaptacion = (
+            "Hilo de análisis & Video: 'Guerra Fría en IA: Qué revela la disputa de seguridad y la ruptura de alianzas sobre el riesgo de tu proveedor de APIs'."
+        )
+    elif "benchmark" in tema_lower:
+        adaptacion = (
+            "Guía ejecutiva: 'Corte de caja de Benchmarks: ¿Realmente necesitas pagar modelos premium o uno abierto cubre el 95% de tus casos de negocio?'"
+        )
+    elif "ceo" in tema_lower or "liderazgo" in tema_lower:
+        adaptacion = (
+            "Columna de Liderazgo & Newsletter: 'El CEO aumentado: 5 rutinas para delegar análisis estratégico en agentes sin perder la brújula del negocio'."
+        )
+    elif "oportunidades" in tema_lower or "roi" in tema_lower:
+        adaptacion = (
+            "Reporte exclusivo 30X: 'Calculadora de ROI: 3 proyectos de IA corporativa que pagan su inversión en menos de 90 días'."
+        )
     elif "memoria" in tema_lower:
         adaptacion = (
             "Video corto / Reel: 'El truco de la memoria persistente local: Cómo evitar que tus agentes corporativos olviden el contexto entre sesiones'."
