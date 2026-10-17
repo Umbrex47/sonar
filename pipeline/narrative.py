@@ -43,34 +43,54 @@ def _generate_narrative_template(cluster: TopicCluster, decision: ClusterDecisio
     else:
         por_que = f"{gancho_desc}; discusión emergente con validación cruzada en {sources_str}."
 
-    # Propuestas editoriales de adaptación para 30X según el formato y el tema
-    tema_clean = cluster.tema_canonico.replace("Herramienta: ", "")
-    formato_sug = decision.formato
+    # Propuestas editoriales de adaptación para 30X con ángulos punchy de alto impacto
+    tema_lower = cluster.tema_canonico.lower()
+    tema_clean = cluster.tema_canonico.replace("-", " ").replace("/", " / ").title()
 
-    if formato_sug == "video_corto":
+    if "rpa" in tema_lower or "operaciones" in tema_lower:
         adaptacion = (
-            f"Video corto/Reel: '3 errores comunes al implementar {tema_clean} en tu empresa' "
+            "Short / Reel: 'Por qué tu empresa debe matar el RPA antes de 2027: Agentes autónomos explicados en 60s' "
+            "+ checklist de migración operativa en LinkedIn."
+        )
+    elif "sandbox" in tema_lower or "seguridad" in tema_lower:
+        adaptacion = (
+            "Carrusel LinkedIn: 'Alerta de Ciberseguridad: 3 capas para evitar que tus agentes de IA ejecuten comandos no autorizados en producción' "
+            "+ infografía de arquitectura de aislamiento."
+        )
+    elif "coding" in tema_lower or "desarrollo" in tema_lower:
+        adaptacion = (
+            "Hilo en X / LinkedIn: 'El fin del autocompletado de código: Cómo los agentes en Slack y Linear están triplicando la velocidad de los equipos de producto en LatAm'."
+        )
+    elif "razonamiento" in tema_lower or "slm" in tema_lower:
+        adaptacion = (
+            "Masterclass / Video de fondo: 'Cómo correr modelos de razonamiento open-source en servidores locales y reducir un 80% tu factura de APIs en la nube'."
+        )
+    elif "adopción" in tema_lower or "laboral" in tema_lower or "empleo" in tema_lower:
+        adaptacion = (
+            "Artículo de fondo & Newsletter: 'El 90% de las empresas en LatAm formalizan IA: Qué puestos de trabajo se están creando y cuáles desaparecen este trimestre'."
+        )
+    elif "compliance" in tema_lower or "auditoría" in tema_lower or "gobernanza" in tema_lower:
+        adaptacion = (
+            "Carrusel infográfico: 'Alerta legal para directores de talento: 4 requisitos de auditoría de IA que entran en vigor este año en la región'."
+        )
+    elif "memoria" in tema_lower:
+        adaptacion = (
+            "Video corto / Reel: 'El truco de la memoria persistente local: Cómo evitar que tus agentes corporativos olviden el contexto entre sesiones'."
+        )
+    elif decision.formato == "video_corto":
+        adaptacion = (
+            f"Video corto / Reel: '3 errores comunes al implementar {tema_clean} en tu empresa' "
             f"+ carrusel de síntesis ejecutiva en LinkedIn."
         )
-    elif formato_sug == "carousel":
+    elif decision.formato == "carousel":
         adaptacion = (
-            f"Carrusel LinkedIn: 'Guía ejecutiva para directivos: Cómo evaluar {tema_clean} "
-            f"sin gastar una fortuna' + infografía de arquitectura."
-        )
-    elif formato_sug == "hilo":
-        adaptacion = (
-            f"Hilo de análisis técnico-estratégico: 'Desglosamos la arquitectura detrás de {tema_clean} "
-            f"y cómo afecta a los equipos en Latinoamérica'."
-        )
-    elif formato_sug == "articulo":
-        adaptacion = (
-            f"Artículo de fondo: 'El impacto real de {tema_clean} en la competitividad regional: "
-            f"lo que los directores de innovación deben saber este trimestre'."
+            f"Carrusel LinkedIn: 'Guía ejecutiva: Cómo evaluar {tema_clean} "
+            f"sin gastar una fortuna' + infografía de decisión."
         )
     else:
         adaptacion = (
-            f"Masterclass / Video largo: 'Implementación práctica de {tema_clean}: "
-            f"de la teoría a la producción en 30 minutos'."
+            f"Artículo de fondo / Newsletter: 'El impacto real de {tema_clean} en la competitividad corporativa: "
+            f"lo que los directores de innovación deben saber'."
         )
 
     return por_que, adaptacion

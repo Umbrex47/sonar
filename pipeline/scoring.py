@@ -60,8 +60,23 @@ def calculate_topic_score(cluster: TopicCluster, decision: ClusterDecision) -> T
     # 3. Penalización por Saturación
     saturacion_penalidad = 0.30 if decision.fase == "saturado" else 0.0
 
-    # 4. Fórmula Ponderada con Confianza Calibrada de Jev
-    # La confianza pondera cada señal sin anular arbitrariamente señales emergentes
+    # 4. Multiplicador de Sinergia Multi-Fuente (premia validación cruzada)
+    synergy_multiplier = 1.25 if fuentes_count >= 3 else (1.10 if fuentes_count == 2 else 0.85)
+
+    # 5. Filtro de Impacto Empresarial vs Proyectos de Juguete
+    titles_text = " ".join([cluster.tema_canonico] + cluster.titulos_muestra(5)).lower()
+    is_toy = any(k in titles_text for k in ["rewrite one turn", "calorie tracker", "fake photo", "photo fooled", "music video", "jailbreak let muse"])
+    has_enterprise_impact = any(
+        k in titles_text
+        for k in [
+            "operacion", "banca", "fintech", "costo", "empresa", "seguridad",
+            "sandbox", "rpa", "compliance", "auditor", "desarrollo", "slm",
+            "workflow", "razonamiento", "productividad", "rrhh", "reemplaz"
+        ]
+    )
+    impact_multiplier = 0.40 if is_toy else (1.20 if has_enterprise_impact else 1.0)
+
+    # 6. Fórmula Ponderada con Confianza Calibrada de Jev
     conf_factor = 0.45 + (0.55 * decision.confianza)
     base_signal = (
         0.35 * crecimiento_norm
@@ -69,7 +84,7 @@ def calculate_topic_score(cluster: TopicCluster, decision: ClusterDecision) -> T
         + 0.20 * multifuente_norm
         + 0.20 * decision.encaje_audiencia
     )
-    raw_weighted = (base_signal * conf_factor) - saturacion_penalidad
+    raw_weighted = (base_signal * conf_factor * synergy_multiplier * impact_multiplier) - saturacion_penalidad
 
     final_score = round(max(raw_weighted, 0.01), 3)
     return final_score, crecimiento_label

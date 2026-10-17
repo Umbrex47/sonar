@@ -64,9 +64,22 @@ class NewslettersSource(BaseSource):
                             summary = getattr(entry, "summary", "").strip()
                             combined_text = f"{title} {summary}".lower()
 
+                            # Descartar ruido geopolítico o temas no relacionados a IA y tecnología
+                            noise_keywords = ["freight", "shipping fleet", "red sea", "ev shipping", "petroleo", "kindergarten", "gaza", "yemen"]
+                            if any(nk in combined_text for nk in noise_keywords):
+                                continue
+
                             # Filtrar solo piezas con relevancia a tecnología, IA o negocios
                             if not any(kw in combined_text for kw in ai_keywords):
                                 continue
+
+                            # Filtro de recencia (últimos 8 días)
+                            import time
+                            pub_parsed = getattr(entry, "published_parsed", None)
+                            if pub_parsed:
+                                pub_ts = time.mktime(pub_parsed)
+                                if time.time() - pub_ts > (8 * 86400):
+                                    continue
 
                             link = getattr(entry, "link", "").strip()
                             author = getattr(entry, "author", publication_name)

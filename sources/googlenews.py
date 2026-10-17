@@ -22,7 +22,7 @@ class GoogleNewsSource(BaseSource):
 
     name: str = "GoogleNews"
     RSS_URL: str = (
-        "https://news.google.com/rss/search?q=inteligencia+artificial+tecnologia+empresas&hl=es-419&gl=MX&ceid=MX:es-419"
+        "https://news.google.com/rss/search?q=(inteligencia+artificial+OR+IA)+empresas+when:7d&hl=es-419&gl=MX&ceid=MX:es-419"
     )
 
     def fetch(self, limit: int = 40) -> List[RawItem]:

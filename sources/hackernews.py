@@ -25,8 +25,8 @@ class HackerNewsSource(BaseSource):
         import time
 
         items: List[RawItem] = []
-        # Ventana de los últimos 14 días para asegurar actualidad estricta en 2026
-        two_weeks_ago = int(time.time()) - (14 * 86400)
+        # Ventana de los últimos 7 días para asegurar actualidad estricta de esta semana
+        seven_days_ago = int(time.time()) - (7 * 86400)
 
         queries = [
             "AI agent OR agentic",
@@ -40,7 +40,7 @@ class HackerNewsSource(BaseSource):
                     params = {
                         "query": q,
                         "tags": "story",
-                        "numericFilters": f"created_at_i>{two_weeks_ago}",
+                        "numericFilters": f"created_at_i>{seven_days_ago}",
                         "hitsPerPage": min(limit // len(queries) + 10, 40),
                     }
                     response = client.get(self.BASE_URL, params=params)

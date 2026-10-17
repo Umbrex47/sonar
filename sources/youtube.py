@@ -4,7 +4,7 @@ Fuente fundamental para detectar señales cuantitativas de FORMATO (vídeo corto
 y velocidad de tracción (vistas por hora).
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import logging
 import os
@@ -59,12 +59,14 @@ class YouTubeSource(BaseSource):
         items: List[RawItem] = []
         try:
             with httpx.Client(timeout=self.timeout) as client:
-                # 1. Search videos recientes sobre IA con foco empresarial y agentes
+                # 1. Search videos recientes sobre IA con foco empresarial y filtro estricto de 7 días
+                seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
                 search_params = {
                     "part": "snippet",
                     "q": "agentes de IA operaciones empresas automatizacion",
                     "type": "video",
                     "order": "date",
+                    "publishedAfter": seven_days_ago,
                     "maxResults": min(limit, 50),
                     "key": self.api_key,
                 }

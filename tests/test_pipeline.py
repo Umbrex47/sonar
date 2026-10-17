@@ -79,3 +79,32 @@ def test_cluster_items():
     assert len(mem_cluster.items) == 2
     assert "YouTube" in mem_cluster.fuentes
     assert "HackerNews" in mem_cluster.fuentes
+
+
+def test_generate_narrative_template():
+    from pipeline.decide import ClusterDecision
+    from pipeline.narrative import generate_narrative
+
+    items = [
+        RawItem(
+            id="1",
+            fuente="YouTube",
+            titulo="Generic tech topic without hardcoded keyword",
+            url="https://yt.com/1",
+            metricas={"vistas_por_hora": 250.0},
+        )
+    ]
+    clusters = cluster_items(items)
+    cluster = clusters[0]
+    decision = ClusterDecision(
+        fase="naciendo",
+        formato="articulo",
+        gancho="dato_contraintuitivo",
+        novedad=0.85,
+        encaje_audiencia=0.85,
+        confianza=0.75,
+        razon="Test rationale",
+    )
+    por_que, adaptacion = generate_narrative(cluster, decision)
+    assert por_que is not None and len(por_que) > 0
+    assert adaptacion is not None and len(adaptacion) > 0
