@@ -302,6 +302,29 @@ class RadarHTTPHandler(BaseHTTPRequestHandler):
             self._send_json({"focuses": [f.model_dump() for f in focuses]})
             return
 
+        # 0.1 API: Base de Conocimiento - Listar fuentes
+        if path == "/api/knowledge":
+            from pipeline.knowledge import list_knowledge_sources
+            sources = list_knowledge_sources()
+            self._send_json({"sources": [s.model_dump() for s in sources]})
+            return
+
+        # 0.2 API: Base de Conocimiento - Detalle por ID
+        if path.startswith("/api/knowledge/") and not path.endswith("/search"):
+            source_id = path.replace("/api/knowledge/", "").strip("/")
+            from pipeline.knowledge.vector_store import VectorStore
+            store = VectorStore()
+            res = store.get_source_by_id(source_id)
+            if res:
+                src, chunks = res
+                self._send_json({
+                    "source": src.model_dump(),
+                    "chunks": [c.model_dump() for c in chunks],
+                })
+            else:
+                self._send_json({"error": "Recurso no encontrado"}, status=404)
+            return
+
         # 1. API: Listar reportes
         if path == "/api/reports":
             self._send_json({"reports": list_available_reports()})
@@ -428,6 +451,82 @@ class RadarHTTPHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": f"Enfoque '{focus_id}' no encontrado."}, status=404)
             return
 
+        # Ingestar recurso a la base de conocimiento con solicitud del usuario
+        if path == "/api/knowledge/ingest":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_length).decode("utf-8")
+                data = json.loads(body)
+                from pipeline.knowledge import ingest_knowledge_resource
+                url = data.get("url", "").strip()
+                solicitud = data.get("solicitud", "").strip() or "Extraer ganchos y estructura de retención"
+                tipo = data.get("tipo", "youtube")
+                titulo = data.get("titulo")
+                autor = data.get("autor")
+
+                if not url:
+                    self._send_json({"error": "La URL del recurso es obligatoria."}, status=400)
+                    return
+
+                src, prof = ingest_knowledge_resource(
+                    url_o_path=url,
+                    solicitud_usuario=solicitud,
+                    tipo=tipo,
+                    titulo=titulo,
+                    autor=autor,
+                )
+                self._send_json({
+                    "status": "success",
+                    "source": src.model_dump(),
+                    "profile": prof.model_dump(),
+                }, status=201)
+            except Exception as e:
+                logger.exception("Error al procesar conocimiento: %s", e)
+                self._send_json({"error": f"Error al procesar recurso: {e}"}, status=500)
+            return
+
+        # Búsqueda semántica en la base de conocimiento
+        if path == "/api/knowledge/search":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_length).decode("utf-8")
+                data = json.loads(body)
+                from pipeline.knowledge import search_knowledge_base
+                query = data.get("query", "").strip()
+                top_k = int(data.get("top_k", 5))
+                tag = data.get("tag")
+                results = search_knowledge_base(query=query, top_k=top_k, tag_filter=tag)
+                self._send_json({"query": query, "total": len(results), "results": results})
+            except Exception as e:
+                self._send_json({"error": f"Error en búsqueda vectorial: {e}"}, status=400)
+            return
+
+        # Evaluación en tiempo real para el Playground de JEV
+        if path == "/api/playground/eval":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_length).decode("utf-8")
+                data = json.loads(body)
+                from pipeline.playground import evaluate_playground_item
+                tema = data.get("tema", "").strip()
+                if not tema:
+                    self._send_json({"error": "El tema o titular es obligatorio."}, status=400)
+                    return
+                fuentes = data.get("fuentes", ["HackerNews", "YouTube"])
+                vph = float(data.get("vistas_por_hora", 150.0))
+                titulos = data.get("titulos_muestra", [tema])
+                telemetry = evaluate_playground_item(
+                    tema=tema,
+                    fuentes=fuentes,
+                    vistas_por_hora=vph,
+                    titulos_muestra=titulos,
+                )
+                self._send_json(telemetry.model_dump())
+            except Exception as e:
+                logger.exception("Error en evaluación de playground: %s", e)
+                self._send_json({"error": f"Error evaluando con Jev: {e}"}, status=500)
+            return
+
         self.send_error(404, "Ruta no encontrada")
 
     def do_PATCH(self) -> None:
@@ -446,6 +545,17 @@ class RadarHTTPHandler(BaseHTTPRequestHandler):
                 self._send_json({"status": "deleted", "id": focus_id})
             else:
                 self._send_json({"error": f"Enfoque '{focus_id}' no encontrado."}, status=404)
+            return
+
+        if path.startswith("/api/knowledge/"):
+            source_id = path.replace("/api/knowledge/", "").strip("/")
+            from pipeline.knowledge.vector_store import VectorStore
+            store = VectorStore()
+            deleted = store.delete_source(source_id)
+            if deleted:
+                self._send_json({"status": "deleted", "id": source_id})
+            else:
+                self._send_json({"error": f"Recurso '{source_id}' no encontrado."}, status=404)
             return
 
         self.send_error(404, "Ruta no encontrada")

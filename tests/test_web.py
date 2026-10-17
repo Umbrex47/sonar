@@ -132,6 +132,34 @@ def test_web_server_endpoints():
             res_del = client.delete(f"/api/focuses/{f_id}")
             assert res_del.status_code == 200
             assert res_del.json()["status"] == "deleted"
+
+            # 10. API Knowledge - List
+            res_knw = client.get("/api/knowledge")
+            assert res_knw.status_code == 200
+            assert "sources" in res_knw.json()
+
+            # 11. API Knowledge - Ingest
+            knw_payload = {
+                "url": "https://www.youtube.com/watch?v=knwtest12345",
+                "solicitud": "Extraer ganchos contraintuitivos",
+                "titulo": "Agentes y Liderazgo",
+                "tipo": "youtube",
+            }
+            res_ing = client.post("/api/knowledge/ingest", json=knw_payload)
+            assert res_ing.status_code == 201
+            ing_data = res_ing.json()
+            assert ing_data["status"] == "success"
+            knw_id = ing_data["source"]["id"]
+
+            # 12. API Knowledge - Search
+            res_search = client.post("/api/knowledge/search", json={"query": "agentes liderazgo", "top_k": 2})
+            assert res_search.status_code == 200
+            assert "results" in res_search.json()
+
+            # 13. API Knowledge - Delete
+            res_del_knw = client.delete(f"/api/knowledge/{knw_id}")
+            assert res_del_knw.status_code == 200
+            assert res_del_knw.json()["status"] == "deleted"
     finally:
         server.shutdown()
         server.server_close()

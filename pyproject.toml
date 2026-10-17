@@ -19,6 +19,8 @@ dependencies = [
     "jev>=0.3.0",
     "rich>=13.7.0",
     "python-dotenv>=1.0.0",
+    "youtube-transcript-api>=1.2.0",
+    "numpy>=2.0.0",
 ]
 
 [project.optional-dependencies]
