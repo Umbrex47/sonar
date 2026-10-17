@@ -2,7 +2,7 @@
 draft_id: 1
 narrative_id: 1
 titulo: Guía de Seguridad para Agentes de IA
-estado: aprobado
+estado: publicado
 formato: hilo
 gancho: tutorial
 autor: 30X Media
