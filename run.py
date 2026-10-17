@@ -138,7 +138,8 @@ def render_terminal_report(scored_topics: List[ScoredTopic], top_n: int = 10) ->
 
         for i, st in enumerate(top, 1):
             content = (
-                f"[bold cyan]→ Por qué:[/] {st.por_que}\n"
+                f"[bold cyan]→ Señal:[/] {st.por_que}\n"
+                f"[bold magenta]→ Encaje Audiencia:[/] {st.por_que_audiencia}\n"
                 f"[bold green]→ Adaptación 30X:[/] {st.adaptacion_30x}"
             )
             console.print(
@@ -165,7 +166,8 @@ def render_terminal_report(scored_topics: List[ScoredTopic], top_n: int = 10) ->
                 f"{st.crecimiento_label.split(' ')[0]:<10} {st.decision.confianza:<7.2f} "
                 f"{st.decision.encaje_audiencia:<7.2f} {st.decision.formato:<13} {fuentes_str}"
             )
-            print(f"   -> Por qué: {st.por_que}")
+            print(f"   -> Señal: {st.por_que}")
+            print(f"   -> Encaje Audiencia: {st.por_que_audiencia}")
             print(f"   -> Adaptación 30X: {st.adaptacion_30x}\n")
 
 
@@ -181,8 +183,9 @@ def build_and_save_report(
 
     top_temas_data = []
     for i, st in enumerate(top, 1):
-        por_que, adaptacion = generate_narrative(st.cluster, st.decision)
+        por_que, por_que_audiencia, adaptacion = generate_narrative(st.cluster, st.decision)
         st.por_que = por_que
+        st.por_que_audiencia = por_que_audiencia
         st.adaptacion_30x = adaptacion
 
         top_temas_data.append(
@@ -198,6 +201,7 @@ def build_and_save_report(
                 "formato": st.decision.formato,
                 "encaje_audiencia": st.decision.encaje_audiencia,
                 "por_que": st.por_que,
+                "por_que_audiencia": st.por_que_audiencia,
                 "adaptacion_30x": st.adaptacion_30x,
                 "evidencia": st.cluster.urls_evidencia(3),
             }
@@ -216,11 +220,17 @@ def build_and_save_report(
 
     os.makedirs(output_dir, exist_ok=True)
     out_file = os.path.join(output_dir, f"{report_id}.json")
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
+    try:
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        print(f"💾 Reporte guardado con éxito en: {out_file}")
+    except OSError as e:
+        print(f"⚠️ No se pudo guardar archivo en disco (sandbox read-only): {e}")
 
-    db.save_report(report_id, week_str, payload)
-    print(f"💾 Reporte guardado con éxito en: {out_file}")
+    try:
+        db.save_report(report_id, week_str, payload)
+    except Exception as e:
+        print(f"⚠️ No se pudo guardar en SQLite: {e}")
     return out_file
 
 
@@ -269,7 +279,8 @@ def show_demo_sample() -> None:
 
         for it in top_items[:5]:
             content = (
-                f"[bold cyan]→ Por qué:[/] {it.get('por_que')}\n"
+                f"[bold cyan]→ Señal:[/] {it.get('por_que')}\n"
+                f"[bold magenta]→ Encaje Audiencia:[/] {it.get('por_que_audiencia', 'Alta relevancia para directores y líderes en LatAm.')}\n"
                 f"[bold green]→ Adaptación 30X:[/] {it.get('adaptacion_30x')}"
             )
             console.print(
@@ -283,7 +294,8 @@ def show_demo_sample() -> None:
     else:
         for it in top_items:
             print(f"#{it.get('posicion')} {it.get('tema')} [{it.get('fase')}]")
-            print(f"   Por qué: {it.get('por_que')}")
+            print(f"   Señal: {it.get('por_que')}")
+            print(f"   Encaje Audiencia: {it.get('por_que_audiencia', 'Alta relevancia para directores y líderes en LatAm.')}")
             print(f"   Adaptación 30X: {it.get('adaptacion_30x')}\n")
 
 

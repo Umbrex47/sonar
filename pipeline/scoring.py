@@ -25,6 +25,7 @@ class ScoredTopic:
         self.score = score
         self.crecimiento_label = crecimiento_label
         self.por_que: str = ""
+        self.por_que_audiencia: str = ""
         self.adaptacion_30x: str = ""
 
 

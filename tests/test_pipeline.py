@@ -105,6 +105,7 @@ def test_generate_narrative_template():
         confianza=0.75,
         razon="Test rationale",
     )
-    por_que, adaptacion = generate_narrative(cluster, decision)
+    por_que, por_que_audiencia, adaptacion = generate_narrative(cluster, decision)
     assert por_que is not None and len(por_que) > 0
+    assert por_que_audiencia is not None and len(por_que_audiencia) > 0
     assert adaptacion is not None and len(adaptacion) > 0

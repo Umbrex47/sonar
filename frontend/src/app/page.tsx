@@ -41,6 +41,7 @@ interface TrendItem {
   formato: string;
   encaje_audiencia: number;
   por_que: string;
+  por_que_audiencia?: string;
   adaptacion_30x: string;
   evidencia: string[];
   referencias_detalladas?: ReferenceItem[];
@@ -260,6 +261,7 @@ export default function RadarHomePage() {
       !q ||
       item.tema.toLowerCase().includes(q) ||
       item.por_que.toLowerCase().includes(q) ||
+      (item.por_que_audiencia && item.por_que_audiencia.toLowerCase().includes(q)) ||
       item.adaptacion_30x.toLowerCase().includes(q);
 
     const matchesFormat =
@@ -639,46 +641,69 @@ export default function RadarHomePage() {
                     </div>
                   </div>
 
-                  {/* Body Grid: Por Qué Funciona vs Adaptación Editorial 30X */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
-                    {/* Col 1: Por qué funciona */}
-                    <div className="bg-[#0f1011] rounded-[12px] p-5 border border-white/5 space-y-2">
-                      <span className="font-mono-label text-[10px] text-[#6a6b6b] flex items-center gap-1.5">
-                        <TrendingUp className="w-3.5 h-3.5 text-[#00b3dd]" />
-                        ¿POR QUÉ FUNCIONA? // SEÑAL CUANTITATIVA
-                      </span>
-                      <p className="text-sm text-[#cacaca] leading-relaxed font-light">
-                        {trend.por_que}
-                      </p>
+                  {/* Body Grid: Señal vs Encaje Audiencia vs Adaptación Editorial 30X */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
+                    {/* Col 1: Por qué funciona / Señal Cuantitativa */}
+                    <div className="bg-[#0f1011] rounded-[12px] p-5 border border-white/5 space-y-2 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <span className="font-mono-label text-[10px] text-[#00b3dd] flex items-center gap-1.5">
+                          <TrendingUp className="w-3.5 h-3.5 text-[#00b3dd]" />
+                          ¿POR QUÉ FUNCIONA? // SEÑAL
+                        </span>
+                        <p className="text-sm text-[#cacaca] leading-relaxed font-light">
+                          {trend.por_que}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Col 2: Adaptación Editorial 30X */}
-                    <div className="bg-[#0f1011] rounded-[12px] p-5 border border-[#847dff]/30 space-y-2 relative">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono-label text-[10px] text-[#847dff] flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-[#847dff]" />
-                          PROPUESTA EDITORIAL 30X
-                        </span>
-                        <button
-                          onClick={() => copyText(trend.adaptacion_30x, `t-${trend.posicion}`)}
-                          className="text-[11px] text-[#847dff] hover:text-white flex items-center gap-1 transition"
-                        >
-                          {copiedId === `t-${trend.posicion}` ? (
-                            <>
-                              <Check className="w-3 h-3 text-white" />
-                              <span className="text-white">Copiado</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3" />
-                              <span>Copiar</span>
-                            </>
-                          )}
-                        </button>
+                    {/* Col 2: Por qué coincide con el perfil o audiencia */}
+                    <div className="bg-[#0f1011] rounded-[12px] p-5 border border-[#dd90d8]/25 space-y-2 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono-label text-[10px] text-[#dd90d8] flex items-center gap-1.5">
+                            <Shield className="w-3.5 h-3.5 text-[#dd90d8]" />
+                            ENCAJE // AUDIENCIA LATAM
+                          </span>
+                          <span className="font-mono-label text-[9px] px-2 py-0.5 rounded bg-[#2e2e2e] text-[#dd90d8] border border-[#dd90d8]/30">
+                            {Math.round(trend.encaje_audiencia * 100)}% AFINIDAD
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#cacaca] leading-relaxed font-light">
+                          {trend.por_que_audiencia ||
+                            "Alta relevancia estratégica para directores y líderes en LatAm: reducción de costos operativos, mitigación de riesgos de API y productividad acelerada."}
+                        </p>
                       </div>
-                      <p className="text-sm text-[#f5f5f7] font-medium leading-relaxed">
-                        {trend.adaptacion_30x}
-                      </p>
+                    </div>
+
+                    {/* Col 3: Adaptación Editorial 30X */}
+                    <div className="bg-[#0f1011] rounded-[12px] p-5 border border-[#847dff]/30 space-y-2 relative flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono-label text-[10px] text-[#847dff] flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-[#847dff]" />
+                            PROPUESTA EDITORIAL 30X
+                          </span>
+                          <button
+                            onClick={() => copyText(trend.adaptacion_30x, `t-${trend.posicion}`)}
+                            className="text-[11px] text-[#847dff] hover:text-white flex items-center gap-1 transition"
+                          >
+                            {copiedId === `t-${trend.posicion}` ? (
+                              <>
+                                <Check className="w-3 h-3 text-white" />
+                                <span className="text-white">Copiado</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Copiar</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-sm text-[#f5f5f7] font-medium leading-relaxed">
+                          {trend.adaptacion_30x}
+                        </p>
+                      </div>
                     </div>
                   </div>
 

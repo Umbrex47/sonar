@@ -19,6 +19,7 @@
       "formato": "video_corto",
       "encaje_audiencia": 0.94,
       "por_que": "Dato contraintuitivo que demuestra cómo la memoria local reduce costos de API en 80%; pico de 540 vistas/hora en YouTube y adopción acelerada en GitHub.",
+      "por_que_audiencia": "Optimización clave para directores de tecnología y producto en LatAm: reduce hasta un 80% los costos recurrentes de API en la nube y evita la pérdida de contexto en interacciones críticas con clientes.",
       "adaptacion_30x": "Reel/Short: 'Por qué tu empresa está gastando de más en APIs: Agentes con memoria local explicados en 60s' + carrusel con checklist en LinkedIn.",
       "evidencia": [
         "https://news.ycombinator.com/item?id=3891024",
@@ -38,6 +39,7 @@
       "formato": "carousel",
       "encaje_audiencia": 0.95,
       "por_que": "Comparativa directa de eficiencia: directivos en LatAm reportan que los reportes estáticos tardan días mientras los agentes responden consultas en tiempo real.",
+      "por_que_audiencia": "Prioridad directa para COOs y directores generales: sustituye reportes estáticos que tardan días por agentes que auditan métricas y generan alertas proactivas en minutos.",
       "adaptacion_30x": "Carrusel de LinkedIn: 'El fin del dashboard corporativo: Cómo 3 empresas en México cambiaron PowerBI por agentes de conciliación'.",
       "evidencia": [
         "https://www.linkedin.com/posts/carlos-mendoza-tech_agentes-ia-operaciones-activity-7182938472910293847",
@@ -56,6 +58,7 @@
       "formato": "articulo",
       "encaje_audiencia": 0.93,
       "por_que": "Demostración rigurosa de que la calibración de tipos y cumplimiento regulatorio supera en un 99% la tasa de éxito de modelos generales con alucinación en fintech.",
+      "por_que_audiencia": "Fundamental para directores de riesgos y tecnología en sectores regulados (fintech y banca en LatAm): inferencia de bajísima latencia, cero alucinación en tipos de datos y cumplimiento de normativas de datos locales.",
       "adaptacion_30x": "Artículo de fondo y Newsletter: 'Por qué los bancos en LatAm prefieren modelos de 3B calibrados antes que ChatGPT: seguridad, latencia y costos'.",
       "evidencia": [
         "https://www.linkedin.com/posts/mariana-silva-fintech_ia-banca-latam-activity-7182998471203948572",
@@ -74,6 +77,7 @@
       "formato": "carousel",
       "encaje_audiencia": 0.96,
       "por_que": "Nuevas regulaciones emergentes en Chile, Colombia y Perú obligan a auditar sesgos en selección de personal asistida por IA.",
+      "por_que_audiencia": "Alerta crítica de compliance para directores de talento y legales: nuevos marcos regulatorios en Chile, Colombia y México exigen auditorías de algoritmos de contratación antes de finalizar el año fiscal.",
       "adaptacion_30x": "Carrusel infográfico: 'Alerta legal para directores de talento: 4 requisitos de auditoría de IA que entran en vigor este año'.",
       "evidencia": [
         "https://www.linkedin.com/posts/roberto-diaz-legal_compliance-ia-rrhh-activity-7182847192039482710"
@@ -91,6 +95,7 @@
       "formato": "video_corto",
       "encaje_audiencia": 0.88,
       "por_que": "Demos en video vertical mostrando prospección personalizada sin spam con picos de interacción y réplicas en TikTok corporativo.",
+      "por_que_audiencia": "Alto interés para directores comerciales y fundadores B2B: automatiza prospección de cuentas clave con personalización real reduciendo el ciclo de venta sin contratar agencias costosas.",
       "adaptacion_30x": "Video vertical: 'Construí un agente que califica prospectos B2B en 45 segundos (Tutorial paso a paso sin código)'.",
       "evidencia": [
         "https://www.tiktok.com/@growth_latam/video/7391827384918237192",
@@ -109,6 +114,7 @@
       "formato": "long_form",
       "encaje_audiencia": 0.86,
       "por_que": "Comparativa masiva de rendimiento en benchmarks de programación y análisis financiero corriendo a costo $0 en hardware interno.",
+      "por_que_audiencia": "Ventaja competitiva para CTOs: correr razonamiento avanzado en servidores propios elimina la dependencia y el gasto en tokens de proveedores en EE.UU., preservando secretos comerciales.",
       "adaptacion_30x": "Masterclass en video largo: 'Guía de despliegue local: Cómo correr modelos de razonamiento en tu propia oficina sin enviar datos a la nube'.",
       "evidencia": [
         "https://github.com/deepseek-ai/DeepSeek-R1",
@@ -127,6 +133,7 @@
       "formato": "articulo",
       "encaje_audiencia": 0.89,
       "por_que": "Estudios revelan sesgo de auto-preferencia e inconsistencia estadística en validación no estructurada; el mercado migra a validadores type-safe como Jev.",
+      "por_que_audiencia": "Relevante para directores de ingeniería y líderes de producto: alerta sobre la fragilidad y sobrecosto de evaluar modelos con otros modelos no estructurados, orientando hacia validación type-safe.",
       "adaptacion_30x": "Hilo técnico y artículo: 'Por qué pedirle a un LLM que evalúe a otro LLM es una trampa costosa (y qué alternativas deterministas existen)'.",
       "evidencia": [
         "https://news.ycombinator.com/item?id=3899201",
@@ -145,6 +152,7 @@
       "formato": "hilo",
       "encaje_audiencia": 0.81,
       "por_que": "Búsqueda de latencias menores a 50ms para flujos de toma de decisiones en tiempo real frente a los frameworks pesados en Python.",
+      "por_que_audiencia": "Estratégico para arquitectos de software en scale-ups: reduce la latencia de respuesta de agentes por debajo de 50ms y optimiza el consumo de memoria en servidores corporativos.",
       "adaptacion_30x": "Hilo en X/LinkedIn: '¿Python está perdiendo el liderazgo en agentes de IA? Analizamos la nueva ola de motores en Rust'.",
       "evidencia": [
         "https://github.com/agent-rs/core",
@@ -163,6 +171,7 @@
       "formato": "carousel",
       "encaje_audiencia": 0.92,
       "por_que": "Casos recientes donde documentos de texto infectaron flujos de RAG corporativos obligan a crear capas de firewall semántico.",
+      "por_que_audiencia": "Prioridad número 1 para CISOs corporativos en LatAm: blindar sistemas contra exfiltración de bases de datos antes de dar acceso a agentes autónomos a herramientas internas de producción.",
       "adaptacion_30x": "Carrusel: 'Cómo blindar los agentes de tu empresa contra ataques de inyección indirecta: 3 capas mínimas de defensa'.",
       "evidencia": [
         "https://news.google.com/rss/prompt-injection-enterprise-security"
@@ -180,6 +189,7 @@
       "formato": "video_corto",
       "encaje_audiencia": 0.91,
       "por_que": "Proliferación masiva de ofertas similares y saturación de anuncios genéricos de facturación electrónica con IA.",
+      "por_que_audiencia": "De impacto directo para directores financieros y dueños de empresas medianas: permite distinguir entre herramientas con ROI comprobado en nómina vs promesas de marketing de software contable.",
       "adaptacion_30x": "Short de opinión directa: 'La verdad sobre las soluciones de contabilidad con IA: qué es marketing y qué ahorra dinero real'.",
       "evidencia": [
         "https://news.google.com/rss/contabilidad-ia-pymes-latam"
