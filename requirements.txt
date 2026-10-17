@@ -1,0 +1,9 @@
+# Radar30X - Dependencias del proyecto
+httpx>=0.27.0
+feedparser>=6.0.11
+rapidfuzz>=3.9.0
+pydantic>=2.8.0
+jev>=0.3.0
+rich>=13.7.0
+python-dotenv>=1.0.0
+pytest>=8.0.0

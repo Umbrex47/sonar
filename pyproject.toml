@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radar30x"
+version = "0.1.0"
+description = "Radar de Contenido 30X - Descubrimiento type-safe y confiable de tendencias en IA"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "30X Team", email = "dev@30x.ai" }
+]
+dependencies = [
+    "httpx>=0.27.0",
+    "feedparser>=6.0.11",
+    "rapidfuzz>=3.9.0",
+    "pydantic>=2.8.0",
+    "jev>=0.3.0",
+    "rich>=13.7.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+radar30x = "run:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

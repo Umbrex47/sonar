@@ -1,0 +1,189 @@
+{
+  "semana": "2026-W42 (12 al 18 de octubre, 2026)",
+  "generado": "2026-10-16T23:00:00Z",
+  "total_items_procesados": 684,
+  "total_clusters_evaluados": 82,
+  "coste_estimado_usd": 0.038,
+  "motor_decision": "Jev (TypeSafe System One Model)",
+  "motor_narrativa": "Haiku / Template calibrado",
+  "top_temas": [
+    {
+      "posicion": 1,
+      "tema": "Agentes de IA con memoria persistente y bases locales",
+      "fase": "naciendo",
+      "confianza_jev": 0.92,
+      "crecimiento": "+385% vs semana previa",
+      "score": 0.884,
+      "fuentes": ["HackerNews", "YouTube", "GitHub", "Manual (LinkedIn)"],
+      "gancho": "dato_contraintuitivo",
+      "formato": "video_corto",
+      "encaje_audiencia": 0.94,
+      "por_que": "Dato contraintuitivo que demuestra cómo la memoria local reduce costos de API en 80%; pico de 540 vistas/hora en YouTube y adopción acelerada en GitHub.",
+      "adaptacion_30x": "Reel/Short: 'Por qué tu empresa está gastando de más en APIs: Agentes con memoria local explicados en 60s' + carrusel con checklist en LinkedIn.",
+      "evidencia": [
+        "https://news.ycombinator.com/item?id=3891024",
+        "https://www.youtube.com/watch?v=agent_mem_demo",
+        "https://github.com/agent-runtime/local-persist"
+      ]
+    },
+    {
+      "posicion": 2,
+      "tema": "Reemplazo de dashboards BI por agentes autónomos de operaciones",
+      "fase": "naciendo",
+      "confianza_jev": 0.89,
+      "crecimiento": "+340% vs semana previa",
+      "score": 0.842,
+      "fuentes": ["Manual (LinkedIn)", "GoogleNews", "Medium"],
+      "gancho": "contraste",
+      "formato": "carousel",
+      "encaje_audiencia": 0.95,
+      "por_que": "Comparativa directa de eficiencia: directivos en LatAm reportan que los reportes estáticos tardan días mientras los agentes responden consultas en tiempo real.",
+      "adaptacion_30x": "Carrusel de LinkedIn: 'El fin del dashboard corporativo: Cómo 3 empresas en México cambiaron PowerBI por agentes de conciliación'.",
+      "evidencia": [
+        "https://www.linkedin.com/posts/carlos-mendoza-tech_agentes-ia-operaciones-activity-7182938472910293847",
+        "https://news.google.com/rss/articles/bi-reemplazado-agentes-latam"
+      ]
+    },
+    {
+      "posicion": 3,
+      "tema": "Modelos pequeños calibrados (SLMs) superando a LLMs gigantes en banca y finanzas",
+      "fase": "en_crecimiento",
+      "confianza_jev": 0.91,
+      "crecimiento": "+290% vs semana previa",
+      "score": 0.816,
+      "fuentes": ["HackerNews", "Manual (LinkedIn)", "Medium"],
+      "gancho": "dato_contraintuitivo",
+      "formato": "articulo",
+      "encaje_audiencia": 0.93,
+      "por_que": "Demostración rigurosa de que la calibración de tipos y cumplimiento regulatorio supera en un 99% la tasa de éxito de modelos generales con alucinación en fintech.",
+      "adaptacion_30x": "Artículo de fondo y Newsletter: 'Por qué los bancos en LatAm prefieren modelos de 3B calibrados antes que ChatGPT: seguridad, latencia y costos'.",
+      "evidencia": [
+        "https://www.linkedin.com/posts/mariana-silva-fintech_ia-banca-latam-activity-7182998471203948572",
+        "https://medium.com/tag/fintech-slm-calibration"
+      ]
+    },
+    {
+      "posicion": 4,
+      "tema": "Cumplimiento normativo y auditoría obligatoria de IA en RRHH",
+      "fase": "naciendo",
+      "confianza_jev": 0.86,
+      "crecimiento": "+260% vs semana previa",
+      "score": 0.778,
+      "fuentes": ["Manual (LinkedIn)", "GoogleNews"],
+      "gancho": "opinion",
+      "formato": "carousel",
+      "encaje_audiencia": 0.96,
+      "por_que": "Nuevas regulaciones emergentes en Chile, Colombia y Perú obligan a auditar sesgos en selección de personal asistida por IA.",
+      "adaptacion_30x": "Carrusel infográfico: 'Alerta legal para directores de talento: 4 requisitos de auditoría de IA que entran en vigor este año'.",
+      "evidencia": [
+        "https://www.linkedin.com/posts/roberto-diaz-legal_compliance-ia-rrhh-activity-7182847192039482710"
+      ]
+    },
+    {
+      "posicion": 5,
+      "tema": "Automatización de prospección B2B mediante micro-agentes",
+      "fase": "en_crecimiento",
+      "confianza_jev": 0.88,
+      "crecimiento": "+310% vs semana previa",
+      "score": 0.772,
+      "fuentes": ["YouTube", "Manual (TikTok)", "Reddit"],
+      "gancho": "tutorial",
+      "formato": "video_corto",
+      "encaje_audiencia": 0.88,
+      "por_que": "Demos en video vertical mostrando prospección personalizada sin spam con picos de interacción y réplicas en TikTok corporativo.",
+      "adaptacion_30x": "Video vertical: 'Construí un agente que califica prospectos B2B en 45 segundos (Tutorial paso a paso sin código)'.",
+      "evidencia": [
+        "https://www.tiktok.com/@growth_latam/video/7391827384918237192",
+        "https://www.youtube.com/watch?v=b2b_agent_pipeline"
+      ]
+    },
+    {
+      "posicion": 6,
+      "tema": "DeepSeek R1 y modelos de razonamiento abierto para servidores locales",
+      "fase": "en_crecimiento",
+      "confianza_jev": 0.94,
+      "crecimiento": "+240% vs semana previa",
+      "score": 0.755,
+      "fuentes": ["HackerNews", "GitHub", "YouTube", "Reddit"],
+      "gancho": "contraste",
+      "formato": "long_form",
+      "encaje_audiencia": 0.86,
+      "por_que": "Comparativa masiva de rendimiento en benchmarks de programación y análisis financiero corriendo a costo $0 en hardware interno.",
+      "adaptacion_30x": "Masterclass en video largo: 'Guía de despliegue local: Cómo correr modelos de razonamiento en tu propia oficina sin enviar datos a la nube'.",
+      "evidencia": [
+        "https://github.com/deepseek-ai/DeepSeek-R1",
+        "https://news.ycombinator.com/item?id=3912093"
+      ]
+    },
+    {
+      "posicion": 7,
+      "tema": "Sistemas de evaluación tipo 'LLM-as-a-judge' y por qué están fallando en producción",
+      "fase": "en_crecimiento",
+      "confianza_jev": 0.85,
+      "crecimiento": "+195% vs semana previa",
+      "score": 0.710,
+      "fuentes": ["HackerNews", "Medium", "Reddit"],
+      "gancho": "dato_contraintuitivo",
+      "formato": "articulo",
+      "encaje_audiencia": 0.89,
+      "por_que": "Estudios revelan sesgo de auto-preferencia e inconsistencia estadística en validación no estructurada; el mercado migra a validadores type-safe como Jev.",
+      "adaptacion_30x": "Hilo técnico y artículo: 'Por qué pedirle a un LLM que evalúe a otro LLM es una trampa costosa (y qué alternativas deterministas existen)'.",
+      "evidencia": [
+        "https://news.ycombinator.com/item?id=3899201",
+        "https://medium.com/feed/llm-eval-limitations"
+      ]
+    },
+    {
+      "posicion": 8,
+      "tema": "Frameworks de orquestación multi-agente en Rust y TypeScript",
+      "fase": "naciendo",
+      "confianza_jev": 0.87,
+      "crecimiento": "+210% vs semana previa",
+      "score": 0.698,
+      "fuentes": ["GitHub", "HackerNews"],
+      "gancho": "contraste",
+      "formato": "hilo",
+      "encaje_audiencia": 0.81,
+      "por_que": "Búsqueda de latencias menores a 50ms para flujos de toma de decisiones en tiempo real frente a los frameworks pesados en Python.",
+      "adaptacion_30x": "Hilo en X/LinkedIn: '¿Python está perdiendo el liderazgo en agentes de IA? Analizamos la nueva ola de motores en Rust'.",
+      "evidencia": [
+        "https://github.com/agent-rs/core",
+        "https://news.ycombinator.com/item?id=3904123"
+      ]
+    },
+    {
+      "posicion": 9,
+      "tema": "Gobernanza de prompts y seguridad contra inyecciones indirectas en empresas",
+      "fase": "en_crecimiento",
+      "confianza_jev": 0.84,
+      "crecimiento": "+175% vs semana previa",
+      "score": 0.672,
+      "fuentes": ["GoogleNews", "Medium", "Manual (LinkedIn)"],
+      "gancho": "historia",
+      "formato": "carousel",
+      "encaje_audiencia": 0.92,
+      "por_que": "Casos recientes donde documentos de texto infectaron flujos de RAG corporativos obligan a crear capas de firewall semántico.",
+      "adaptacion_30x": "Carrusel: 'Cómo blindar los agentes de tu empresa contra ataques de inyección indirecta: 3 capas mínimas de defensa'.",
+      "evidencia": [
+        "https://news.google.com/rss/prompt-injection-enterprise-security"
+      ]
+    },
+    {
+      "posicion": 10,
+      "tema": "Automatización contable con IA predictiva para pymes en Latinoamérica",
+      "fase": "saturado",
+      "confianza_jev": 0.90,
+      "crecimiento": "+120% vs semana previa",
+      "score": 0.540,
+      "fuentes": ["GoogleNews", "Manual (LinkedIn)", "YouTube"],
+      "gancho": "opinion",
+      "formato": "video_corto",
+      "encaje_audiencia": 0.91,
+      "por_que": "Proliferación masiva de ofertas similares y saturación de anuncios genéricos de facturación electrónica con IA.",
+      "adaptacion_30x": "Short de opinión directa: 'La verdad sobre las soluciones de contabilidad con IA: qué es marketing y qué ahorra dinero real'.",
+      "evidencia": [
+        "https://news.google.com/rss/contabilidad-ia-pymes-latam"
+      ]
+    }
+  ]
+}
