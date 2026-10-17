@@ -1,0 +1,110 @@
+[
+  {
+    "id": "polemicas-labs",
+    "nombre": "Polémicas y Gobernanza en Grandes Labs",
+    "categoria": "polemicas",
+    "descripcion": "Disputas legales, salidas de ejecutivos, seguridad crítica y tensiones entre OpenAI, Anthropic, Meta y Google.",
+    "keywords": [
+      "OpenAI",
+      "Anthropic",
+      "Sam Altman",
+      "Dario Amodei",
+      "safety researcher",
+      "copyright lawsuit",
+      "antitrust AI",
+      "Replit Anthropic",
+      "whistleblower",
+      "departures"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T09:27:03.399768+00:00"
+  },
+  {
+    "id": "benchmarks-race",
+    "nombre": "Benchmarks & Carrera de Modelos de Razonamiento",
+    "categoria": "benchmarks",
+    "descripcion": "Evolución de capacidades, evaluaciones rigurosas (SWE-bench, MATH, reasoning) y comparativas de costo de inferencia.",
+    "keywords": [
+      "benchmark",
+      "evals",
+      "SWE-bench",
+      "reasoning models",
+      "o3",
+      "Claude 3.5 Sonnet",
+      "DeepSeek v3",
+      "Gemini 2",
+      "token pricing",
+      "costo de inferencia"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T09:27:03.399789+00:00"
+  },
+  {
+    "id": "ceo-desarrollo",
+    "nombre": "Desarrollo Personal de CEO & Liderazgo en la Era de IA",
+    "categoria": "ceo_liderazgo",
+    "descripcion": "Productividad de directores, toma de decisiones con IA, modelos mentales ejecutivos y rediseño de equipos de alto rendimiento.",
+    "keywords": [
+      "CEO",
+      "tech leadership",
+      "liderazgo tecnológico",
+      "toma de decisiones",
+      "productividad directiva",
+      "founder",
+      "cultura corporativa",
+      "gestión de talento",
+      "equipos autónomos"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T09:27:03.399796+00:00"
+  },
+  {
+    "id": "oportunidades-roi",
+    "nombre": "Oportunidades de Negocio & Retorno de Inversión (ROI)",
+    "categoria": "oportunidades_roi",
+    "descripcion": "Casos prácticos de generación de ingresos, ahorro operativo medible e implementación de IA en banca, retail y fintech en LatAm.",
+    "keywords": [
+      "ROI inteligencia artificial",
+      "reducción de costos",
+      "ahorro operativo",
+      "banca IA",
+      "fintech LatAm",
+      "adopción empresarial",
+      "casos de uso monetización"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T09:27:03.399804+00:00"
+  },
+  {
+    "id": "agentes-operaciones",
+    "nombre": "Agentes Autónomos y Reemplazo de RPA",
+    "categoria": "agentes_operaciones",
+    "descripcion": "Automatización operativa de punta a punta, eliminación de software legado y orquestación de workflows.",
+    "keywords": [
+      "agentes de IA",
+      "reemplazo RPA",
+      "automatización procesos",
+      "workflows autónomos",
+      "conciliación",
+      "prospección B2B"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T09:27:03.399808+00:00"
+  },
+  {
+    "id": "seguridad-sandboxing",
+    "nombre": "Sandboxing, Seguridad y Cumplimiento Regulatorio",
+    "categoria": "seguridad",
+    "descripcion": "Aislamiento de comandos de agentes, auditoría legal y gobernanza en contrataciones de talento.",
+    "keywords": [
+      "sandboxing IA",
+      "jailbreak",
+      "seguridad agentes",
+      "compliance IA",
+      "auditoría algoritmos",
+      "ciberseguridad corporativa"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T09:27:03.399813+00:00"
+  }
+]

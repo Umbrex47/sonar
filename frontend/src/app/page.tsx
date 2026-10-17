@@ -63,7 +63,14 @@ interface SearchFocus {
   creado_en?: string;
 }
 
-const BACKEND_URL = "http://localhost:8080";
+const getApiBase = () => {
+  if (typeof window !== "undefined") {
+    if (window.location.port === "8080" || window.location.port === "") {
+      return "";
+    }
+  }
+  return "http://localhost:8080";
+};
 
 export default function RadarHomePage() {
   const [report, setReport] = useState<ReportData | null>(null);
@@ -77,7 +84,10 @@ export default function RadarHomePage() {
   const [isRunningRadar, setIsRunningRadar] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // Nuevo enfoque form state
+  // Enfoque rápido inline
+  const [quickFocusInput, setQuickFocusInput] = useState("");
+
+  // Nuevo enfoque form state (modal)
   const [newFocusName, setNewFocusName] = useState("");
   const [newFocusCategory, setNewFocusCategory] = useState("polemicas");
   const [newFocusKeywords, setNewFocusKeywords] = useState("");
@@ -91,22 +101,22 @@ export default function RadarHomePage() {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
+      const api = getApiBase();
       // 1. Cargar reporte más reciente
-      const resReport = await fetch(`${BACKEND_URL}/api/report/latest`);
+      const resReport = await fetch(`${api}/api/report/latest`);
       if (resReport.ok) {
         const reportJson = await resReport.json();
         setReport(reportJson);
       }
 
       // 2. Cargar enfoques de búsqueda
-      const resFocuses = await fetch(`${BACKEND_URL}/api/focuses`);
+      const resFocuses = await fetch(`${api}/api/focuses`);
       if (resFocuses.ok) {
         const focusesJson = await resFocuses.json();
         setFocuses(focusesJson.focuses || []);
       }
     } catch (err) {
       console.warn("Backend local no disponible o cargando datos fallback:", err);
-      // Fallback elegante para renderizar sin crash si el backend está arrancando
     } finally {
       setLoading(false);
     }
@@ -120,7 +130,8 @@ export default function RadarHomePage() {
 
   const handleToggleFocus = async (focusId: string) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/focuses/${focusId}/toggle`, {
+      const api = getApiBase();
+      const res = await fetch(`${api}/api/focuses/${focusId}/toggle`, {
         method: "POST",
       });
       if (res.ok) {
@@ -135,7 +146,8 @@ export default function RadarHomePage() {
 
   const handleDeleteFocus = async (focusId: string) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/focuses/${focusId}`, {
+      const api = getApiBase();
+      const res = await fetch(`${api}/api/focuses/${focusId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -143,6 +155,33 @@ export default function RadarHomePage() {
       }
     } catch (e) {
       console.error("Error al eliminar enfoque:", e);
+    }
+  };
+
+  const handleQuickAddFocus = async () => {
+    if (!quickFocusInput.trim()) return;
+    const term = quickFocusInput.trim();
+    try {
+      const api = getApiBase();
+      const res = await fetch(`${api}/api/focuses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: term,
+          categoria: "general",
+          keywords: [term],
+          descripcion: `Enfoque rápido para monitorear "${term}" en tiempo real.`,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFocuses((prev) => [...prev, data.focus]);
+        setQuickFocusInput("");
+        setStatusMessage(`Enfoque "${term}" añadido y activado.`);
+        setTimeout(() => setStatusMessage(null), 3500);
+      }
+    } catch (e) {
+      console.error("Error al añadir enfoque rápido:", e);
     }
   };
 
@@ -156,7 +195,8 @@ export default function RadarHomePage() {
       .filter((k) => k.length > 0);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/focuses`, {
+      const api = getApiBase();
+      const res = await fetch(`${api}/api/focuses`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -172,7 +212,7 @@ export default function RadarHomePage() {
         setNewFocusName("");
         setNewFocusKeywords("");
         setNewFocusDesc("");
-        setStatusMessage("Enfoque agregado correctamente. Haz clic en 'Actualizar Radar'.");
+        setStatusMessage("Enfoque guardado y activado. Pulsa 'Actualizar Radar'.");
         setTimeout(() => setStatusMessage(null), 4000);
       }
     } catch (e) {
@@ -184,11 +224,12 @@ export default function RadarHomePage() {
     setIsRunningRadar(true);
     setStatusMessage("Ejecutando escaneo de 8 fuentes y calibración Jev en segundo plano...");
     try {
-      await fetch(`${BACKEND_URL}/api/run`, { method: "POST" });
+      const api = getApiBase();
+      await fetch(`${api}/api/run`, { method: "POST" });
       // Polling cada 3 segundos
       const interval = setInterval(async () => {
         try {
-          const res = await fetch(`${BACKEND_URL}/api/status`);
+          const res = await fetch(`${api}/api/status`);
           const st = await res.json();
           if (!st.is_running) {
             clearInterval(interval);
@@ -197,7 +238,7 @@ export default function RadarHomePage() {
               setStatusMessage("Radar actualizado con éxito. Refrescando datos...");
               await fetchInitialData();
             } else {
-              setStatusMessage("Finalizado con advertencia: " + (st.last_error || "Revisa logs"));
+              setStatusMessage("Finalizado: " + (st.last_error || "Completado"));
             }
             setTimeout(() => setStatusMessage(null), 4000);
           }
@@ -207,7 +248,7 @@ export default function RadarHomePage() {
       }, 3000);
     } catch (e) {
       setIsRunningRadar(false);
-      setStatusMessage("No se pudo conectar con el servidor backend en localhost:8080.");
+      setStatusMessage("Error al comunicar con el motor del radar.");
       setTimeout(() => setStatusMessage(null), 4000);
     }
   };
@@ -347,6 +388,62 @@ export default function RadarHomePage() {
                     : fmt.toUpperCase()}
                 </button>
               ))}
+            </div>
+
+            {/* Quick Search Focuses Bar — Simplicidad Absoluta */}
+            <div className="pt-6 max-w-2xl mx-auto space-y-2.5">
+              <div className="flex items-center justify-between text-[11px] px-1">
+                <span className="font-mono-label text-[10px] text-[#6a6b6b]">
+                  ENFOQUES DE BÚSQUEDA ACTIVOS (CLIC PARA ACTIVAR/PAUSAR):
+                </span>
+                <button
+                  onClick={() => setIsFocusStudioOpen(true)}
+                  className="text-[11px] text-[#847dff] hover:text-white transition"
+                >
+                  + Administrar
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                {focuses.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => handleToggleFocus(f.id)}
+                    className={`font-mono-label text-[10px] px-3 py-1.5 rounded-[9999px] border transition flex items-center gap-1.5 ${
+                      f.activo
+                        ? "bg-[#2e2e2e] text-[#ffffff] border-[#847dff]/50"
+                        : "bg-[#0f1011] text-[#6a6b6b] border-white/5 opacity-50 line-through"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        f.activo ? "bg-[#847dff]" : "bg-transparent"
+                      }`}
+                    ></span>
+                    <span>{f.nombre}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Inline Quick Add Input */}
+              <div className="pt-2 flex items-center justify-center gap-2 max-w-md mx-auto">
+                <input
+                  type="text"
+                  placeholder="+ Añadir nuevo enfoque (ej: despidos OpenAI, Claude 3.7)..."
+                  value={quickFocusInput}
+                  onChange={(e) => setQuickFocusInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleQuickAddFocus();
+                  }}
+                  className="bg-[#000000] border border-white/10 rounded-[8px] px-3 py-1.5 text-xs text-[#f5f5f7] placeholder-[#6a6b6b] flex-1 outline-none focus:border-[#847dff]"
+                />
+                <button
+                  onClick={handleQuickAddFocus}
+                  className="px-3 py-1.5 rounded-[8px] bg-white text-black font-semibold text-xs hover:bg-[#cacaca] transition"
+                >
+                  Agregar
+                </button>
+              </div>
             </div>
           </div>
         </section>

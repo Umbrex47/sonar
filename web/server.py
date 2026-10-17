@@ -344,7 +344,32 @@ class RadarHTTPHandler(BaseHTTPRequestHandler):
                 self._send_json(RUN_STATE)
             return
 
-        # 6. Página Web Principal
+        # 6. Servir Frontend Next.js estático (frontend/out) o template de reserva
+        frontend_out = get_base_dir() / "frontend" / "out"
+        if frontend_out.exists():
+            rel_path = path.lstrip("/")
+            if not rel_path or rel_path == "index.html":
+                target_file = frontend_out / "index.html"
+            else:
+                target_file = frontend_out / rel_path
+
+            if target_file.is_file():
+                import mimetypes
+                content_type, _ = mimetypes.guess_type(str(target_file))
+                content_type = content_type or "application/octet-stream"
+                if content_type.startswith("text/") or content_type in ["application/javascript", "application/json"]:
+                    content_type += "; charset=utf-8"
+                with open(target_file, "rb") as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(content)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(content)
+                return
+
+        # Fallback a plantilla de reserva
         if path in ["/", "/index.html"]:
             template_path = get_base_dir() / "web" / "templates" / "index.html"
             if template_path.exists():

@@ -110,32 +110,28 @@ def _get_storage_path(custom_path: Optional[str] = None) -> Path:
 _IN_MEMORY_FOCUSES: Optional[List[SearchFocus]] = None
 
 
-def load_focuses(storage_path: Optional[str] = None) -> List[SearchFocus]:
-    """Carga los enfoques de búsqueda desde el archivo JSON de configuración o inicializa los defaults."""
+def load_focuses(storage_path: Optional[str] = None, force_reload: bool = False) -> List[SearchFocus]:
+    """Carga los enfoques de búsqueda desde memoria o archivo JSON de configuración."""
     global _IN_MEMORY_FOCUSES
 
-    path = _get_storage_path(storage_path)
-    if not path.exists():
-        if _IN_MEMORY_FOCUSES is not None:
-            return list(_IN_MEMORY_FOCUSES)
-        focuses = [SearchFocus(**f) for f in DEFAULT_FOCUSES]
-        save_focuses(focuses, storage_path)
-        _IN_MEMORY_FOCUSES = list(focuses)
-        return focuses
+    if _IN_MEMORY_FOCUSES is not None and not force_reload:
+        return list(_IN_MEMORY_FOCUSES)
 
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-        focuses = [SearchFocus(**item) for item in raw]
-        _IN_MEMORY_FOCUSES = list(focuses)
-        return focuses
-    except Exception as e:
-        logger.warning("No se pudo leer %s: %s. Usando memoria/defaults.", path, e)
-        if _IN_MEMORY_FOCUSES is not None:
-            return list(_IN_MEMORY_FOCUSES)
-        focuses = [SearchFocus(**f) for f in DEFAULT_FOCUSES]
-        _IN_MEMORY_FOCUSES = list(focuses)
-        return focuses
+    path = _get_storage_path(storage_path)
+    if path.exists():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            focuses = [SearchFocus(**item) for item in raw]
+            _IN_MEMORY_FOCUSES = list(focuses)
+            return focuses
+        except Exception as e:
+            logger.warning("No se pudo leer %s: %s. Usando defaults.", path, e)
+
+    focuses = [SearchFocus(**f) for f in DEFAULT_FOCUSES]
+    save_focuses(focuses, storage_path)
+    _IN_MEMORY_FOCUSES = list(focuses)
+    return focuses
 
 
 def save_focuses(focuses: List[SearchFocus], storage_path: Optional[str] = None) -> bool:
