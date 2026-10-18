@@ -157,7 +157,7 @@ python run.py score
 # 3. Generar el reporte del Top 10 con síntesis editorial
 python run.py report --top 10
 
-# 4. Modo Demostración en Vivo (Plan B precalculado para pitch)
+# 4. Modo Demostración en Vivo (Dataset precalculado de respaldo)
 python run.py demo
 ```
 
@@ -240,17 +240,7 @@ $$\text{score} = \text{confianza} \times (0.35 \times \text{crecimiento} + 0.25 
 
 ---
 
-## 10. Guion del Pitch (5 Minutos)
-
-1. **El Gancho (1 min):** *"Hoy los medios de contenido gastan miles de dólares al año en scrapers que entregan montañas de texto, pero no saben por qué funciona una pieza, si la tendencia está naciendo o si ya fue copiada 100 veces en LinkedIn."*
-2. **La Solución (1 min):** Demostración en vivo de `python run.py run-all --top 10`. En menos de 20 segundos obtenemos el Top 10 estructurado y trazable a URLs reales.
-3. **Por qué Jev es el corazón (1.5 min):** *"Para descubrir tendencias se necesitan decisiones, no alucinaciones. Jev (System One) no redacta texto: evalúa tipos estrictos con probabilidades calibradas. El LLM creativo entra únicamente al final sobre las decisiones tomadas por Jev."*
-4. **Compliance y LinkedIn (1 min):** *"Cero scraping ilegal. Usamos a la propia comunidad y equipo de 30X como sensor mediante captura asistida, complementado con señales del web abierto y YouTube que anticipan lo que ocurrirá en LinkedIn."*
-5. **Cierre (30 seg):** *"Un sistema confiable, 100% legal, con latencia de segundos y un costo operativo menor a 5 centavos por corrida."*
-
----
-
-## 11. Ejecución de Pruebas Unitarias
+## 10. Ejecución de Pruebas Unitarias
 
 ```bash
 pytest -o cache_dir=/tmp/pytest_cache tests
