@@ -256,16 +256,48 @@ def _heuristic_calibrate(cluster: TopicCluster) -> ClusterDecision:
     )
 
 
+import json
+
 _DECISION_CACHE: Dict[str, ClusterDecision] = {}
+CACHE_FILE = "data/jev_cache.json"
+
+
+def _load_persistent_cache() -> None:
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for k, v in data.items():
+                    _DECISION_CACHE[k] = ClusterDecision(**v)
+        except Exception as e:
+            logger.debug("No se pudo cargar caché persistente de Jev: %s", e)
+
+
+def _save_persistent_cache() -> None:
+    try:
+        os.makedirs(os.path.dirname(os.path.abspath(CACHE_FILE)), exist_ok=True)
+        serializable = {k: v.model_dump() for k, v in _DECISION_CACHE.items()}
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(serializable, f, ensure_ascii=False)
+    except Exception as e:
+        logger.debug("No se pudo guardar caché persistente de Jev: %s", e)
+
+
+_load_persistent_cache()
 
 
 def clear_decision_cache() -> None:
-    """Limpia la caché en memoria de decisiones de Jev/heurística."""
+    """Limpia la caché de decisiones de Jev."""
     _DECISION_CACHE.clear()
+    if os.path.exists(CACHE_FILE):
+        try:
+            os.remove(CACHE_FILE)
+        except Exception:
+            pass
 
 
 def decide_cluster(cluster: TopicCluster) -> ClusterDecision:
-    """Evalúa un cluster utilizando Jev (TypeSafe System One) o fallback calibrado.
+    """Evalúa un cluster utilizando Jev (TypeSafe System One), caché persistente o fallback calibrado.
 
     Args:
         cluster: Instancia de TopicCluster con métricas y títulos agrupados.
@@ -274,11 +306,16 @@ def decide_cluster(cluster: TopicCluster) -> ClusterDecision:
         ClusterDecision con validación estricta de tipos Pydantic.
     """
     has_api_key = bool(os.getenv("TYPESAFE_API_KEY", "").strip())
-    cache_key = f"{cluster.tema_canonico}:{len(cluster.items)}:{len(cluster.fuentes)}:{has_api_key}"
+    cache_key = f"{cluster.tema_canonico}:{len(cluster.items)}:{len(cluster.fuentes)}"
     if cache_key in _DECISION_CACHE:
         return _DECISION_CACHE[cache_key]
 
-    if has_api_key:
+    # Optimización de latencia en escaneo en vivo:
+    # Si es una mención aislada sin velocidad (1 ítem, 1 fuente), evaluar con heurística calibrada determinista
+    # para evitar cientos de llamadas HTTP remotas redundantes que demorarían minutos en demos en vivo.
+    is_isolated = len(cluster.items) == 1 and len(cluster.fuentes) == 1 and cluster.metricas_agregadas.get("max_vistas_por_hora", 0) < 180
+
+    if has_api_key and not is_isolated:
         state_prompt = (
             f"Tema Canónico: {cluster.tema_canonico}\n"
             f"Fuentes ({len(cluster.fuentes)}): {', '.join(cluster.fuentes)}\n"
@@ -300,6 +337,7 @@ def decide_cluster(cluster: TopicCluster) -> ClusterDecision:
                 audit=heuristic_fallback.audit,
             )
             _DECISION_CACHE[cache_key] = dec
+            _save_persistent_cache()
             return dec
         except Exception as exc:
             logger.warning(

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MarkdownRenderer } from "../../components/MarkdownRenderer";
 import {
   FileText,
@@ -40,6 +40,21 @@ export default function BorradoresPage() {
   const [editedBody, setEditedBody] = useState<string>("");
   const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+
+  // Referencias para scroll unificado en el borrador
+  const draftBodyRef = useRef<HTMLDivElement>(null);
+  const draftTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleDraftCardWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const scrollTarget = isEditMode ? draftTextareaRef.current : draftBodyRef.current;
+    if (!scrollTarget) return;
+
+    // Si el scroll ocurre en la cabecera, etiquetas o bordes del contenedor,
+    // desplazamos automáticamente el cuerpo del borrador para que responda desde cualquier zona.
+    if (!scrollTarget.contains(e.target as Node) && e.target !== scrollTarget) {
+      scrollTarget.scrollTop += e.deltaY;
+    }
+  };
 
   // Modal para redactar nuevo borrador
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -358,7 +373,7 @@ export default function BorradoresPage() {
       {/* Main Split Layout: List on Left, Viewer on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Left List of Drafts */}
-        <div data-tour="drafts-sidebar" className="lg:col-span-5 space-y-2.5">
+        <div data-tour="drafts-sidebar" className="lg:col-span-5 space-y-2.5 max-h-[calc(100vh-110px)] overflow-y-auto overscroll-contain pr-1">
           {loading && drafts.length === 0 ? (
             <div className="p-8 text-center text-xs text-[#72706b] bg-[#fdfbfa] rounded-[8px] border border-[#d1d1cd]">
               <RefreshCw className="w-4 h-4 animate-spin text-[#016a71] mx-auto mb-2" />
@@ -434,9 +449,12 @@ export default function BorradoresPage() {
         {/* Right Reader / Editor Pane */}
         <div data-tour="drafts-editor" className="lg:col-span-7">
           {selectedDraft ? (
-            <div className="rounded-[8px] bg-[#fdfbfa] border border-[#d1d1cd] p-5 space-y-5 shadow-xs sticky top-20">
+            <div
+              onWheel={handleDraftCardWheel}
+              className="rounded-[8px] bg-[#fdfbfa] border border-[#d1d1cd] p-5 shadow-xs sticky top-20 flex flex-col max-h-[calc(100vh-110px)] space-y-4"
+            >
               {/* Header of Selected Draft */}
-              <div className="space-y-3 pb-4 border-b border-[#d1d1cd]">
+              <div className="space-y-3 pb-3 border-b border-[#d1d1cd] shrink-0">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
                     <span className="font-mono text-[10px] text-[#72706b]">
@@ -560,8 +578,8 @@ export default function BorradoresPage() {
 
               {/* Script / Body Content: Markdown Viewer vs Editor */}
               {isEditMode ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs pb-1 border-b border-[#d1d1cd]/60">
+                <div className="space-y-3 flex-1 min-h-0 flex flex-col">
+                  <div className="flex items-center justify-between text-xs pb-1 border-b border-[#d1d1cd]/60 shrink-0">
                     <span className="font-mono text-[10px] text-[#72706b] uppercase tracking-wider flex items-center space-x-1.5">
                       <Edit3 className="w-3 h-3 text-[#016a71]" />
                       <span>Editor Markdown en Vivo</span>
@@ -580,13 +598,14 @@ export default function BorradoresPage() {
                   </div>
 
                   <textarea
+                    ref={draftTextareaRef}
                     value={editedBody}
                     onChange={(e) => setEditedBody(e.target.value)}
                     placeholder="Escribe o edita el guión en formato Markdown..."
-                    className="w-full h-[480px] bg-[#faf8f5] border border-[#016a71] rounded-[6px] p-4 text-[#27251e] font-mono text-xs sm:text-[13px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#016a71] resize-y shadow-inner"
+                    className="w-full flex-1 min-h-[350px] bg-[#faf8f5] border border-[#016a71] rounded-[6px] p-4 text-[#27251e] font-mono text-xs sm:text-[13px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#016a71] resize-none shadow-inner overflow-y-auto overscroll-contain"
                   />
 
-                  <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center justify-between pt-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
@@ -614,7 +633,11 @@ export default function BorradoresPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-[#faf8f5] rounded-[6px] border border-[#d1d1cd] p-5 text-[#27251e] font-sans text-xs sm:text-[13px] leading-relaxed max-h-[600px] overflow-y-auto select-text selection:bg-[#016a71]/20">
+                <div
+                  ref={draftBodyRef}
+                  tabIndex={0}
+                  className="bg-[#faf8f5] rounded-[6px] border border-[#d1d1cd] p-5 text-[#27251e] font-sans text-xs sm:text-[13px] leading-relaxed flex-1 min-h-0 overflow-y-auto select-text selection:bg-[#016a71]/20 overscroll-contain focus:outline-none focus:ring-1 focus:ring-[#016a71]/20"
+                >
                   {loadingBody ? (
                     <div className="flex items-center space-x-2 text-[#72706b] py-8 justify-center font-mono text-xs">
                       <RefreshCw className="w-4 h-4 animate-spin text-[#016a71]" />
@@ -631,7 +654,7 @@ export default function BorradoresPage() {
               )}
 
               {selectedDraft.file_path && (
-                <div className="text-[10px] font-mono text-[#92918b] truncate pt-1">
+                <div className="text-[10px] font-mono text-[#92918b] truncate pt-1 shrink-0">
                   Archivo local: {selectedDraft.file_path}
                 </div>
               )}

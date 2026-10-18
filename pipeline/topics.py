@@ -73,18 +73,35 @@ def clean_topic_phrase(title: str, summary: str = "") -> str:
         flags=re.I,
     )
 
-    # 5. Normalizar entidades tecnológicas muy específicas reconocidas (sin absorber temas generales)
+    # 5. Normalizar entidades tecnológicas clave para validación cruzada multi-fuente
     t_lower = f"{text} {summary}".lower()
-    if "claude code" in t_lower:
+
+    if any(k in t_lower for k in ["claude code", "claude 3.7", "claude 3.5 sonnet", "computer use anthropic"]):
         return "Claude Code y Automatización del Software"
-    if "graphrag" in t_lower or "graph rag" in t_lower:
-        return "GraphRAG y Grafos de Conocimiento Empresarial"
-    if "deepseek-r1" in t_lower or "deepseek r1" in t_lower:
+    if any(k in t_lower for k in ["deepseek-r1", "deepseek r1", "deepseek v3", "deepseek-v3"]) or ("deepseek" in t_lower and any(k in t_lower for k in ["reasoning", "razonamiento", "benchmark", "cost", "costo", "inferencia"])):
         return "DeepSeek-R1 y Modelos de Razonamiento Open Source"
-    if any(k in t_lower for k in ["webrtc", "voice agent", "agente de voz"]) and any(k in t_lower for k in ["ia", "ai", "realtime", "tiempo real"]):
+    if any(k in t_lower for k in ["openai o3", "openai o1", "o3-mini", "o1-mini", "reasoning model", "modelo de razonamiento"]) and any(k in t_lower for k in ["openai", "sam altman", "enterprise", "empresa"]):
+        return "OpenAI o3/o1 y Modelos de Razonamiento Enterprise"
+    if "graphrag" in t_lower or "graph rag" in t_lower or ("grafo" in t_lower and "rag" in t_lower):
+        return "GraphRAG y Grafos de Conocimiento Empresarial"
+    if any(k in t_lower for k in ["model context protocol", "protocolo mcp", "mcp server", "servidor mcp"]) or ("mcp" in t_lower and "anthropic" in t_lower):
+        return "Model Context Protocol (MCP) y Conectividad de Agentes"
+    if any(k in t_lower for k in ["webrtc", "voice agent", "agente de voz", "voz en tiempo real"]) and any(k in t_lower for k in ["ia", "ai", "realtime", "tiempo real", "latencia"]):
         return "Agentes de Voz en Tiempo Real y Latencia Ultrabaja"
-    if any(k in t_lower for k in ["sandbox", "airlock", "guardrail"]) and any(k in t_lower for k in ["agent", "agente"]):
+    if any(k in t_lower for k in ["sandbox", "airlock", "guardrail", "safebox", "aislamiento"]) and any(k in t_lower for k in ["agent", "agente", "ia", "ai"]):
         return "Sandboxing, Seguridad y Aislamiento de Agentes"
+    if any(k in t_lower for k in ["reemplazo rpa", "reemplazar rpa", "rpa tradicional"]) or (any(k in t_lower for k in ["operaciones", "automatización"]) and any(k in t_lower for k in ["agente autónomo", "agentes autónomos", "autonomous agents", "oficina de agentes"])):
+        return "Reemplazo de RPA por Agentes Autónomos de Operaciones"
+    if any(k in t_lower for k in ["slm", "small language model", "modelos pequeños", "vllm", "ollama", "inferencia local", "modelos locales"]):
+        return "Modelos SLM y Eficiencia de Inferencia Local"
+    if any(k in t_lower for k in ["latam", "américa latina", "latinoamérica", "mexico", "colombia"]) and any(k in t_lower for k in ["adopción", "banca", "fintech", "ia en empresas", "soberanía"]):
+        return "Adopción y Soberanía de IA en Empresas de LatAm"
+    if any(k in t_lower for k in ["sam altman", "dario amodei", "whistleblower", "demanda copyright", "antitrust ia", "salidas ejecutivos"]) and any(k in t_lower for k in ["openai", "anthropic", "meta", "google"]):
+        return "Gobernanza y Controversias en Grandes Laboratorios de IA"
+    if any(k in t_lower for k in ["swe-bench", "swebench", "benchmark de razonamiento", "evals de ia"]) and any(k in t_lower for k in ["eval", "evaluacion", "coding", "razonamiento"]):
+        return "Benchmarks de Rendimiento y Evaluaciones SWE-bench"
+    if any(k in t_lower for k in ["ceo", "liderazgo", "productividad directiva", "directores"]) and any(k in t_lower for k in ["inteligencia artificial", "ia", "estrategia"]):
+        return "Liderazgo y Productividad Directiva con IA"
 
     # 6. Limpieza de puntuación y espacios residuales
     text = re.sub(r"^[–—:\-\s]+|[–—:\-\s]+$", "", text)
@@ -104,13 +121,13 @@ def clean_topic_phrase(title: str, summary: str = "") -> str:
 
 def cluster_items(
     items: List[RawItem],
-    similarity_threshold: float = 75.0,
+    similarity_threshold: float = 68.0,
 ) -> List[TopicCluster]:
-    """Agrupa ítems en clusters usando RapidFuzz token_set_ratio.
+    """Agrupa ítems en clusters usando RapidFuzz token_set_ratio y coincidencia de entidades.
 
     Args:
         items: Lista de RawItem deduplicados.
-        similarity_threshold: Umbral porcentual de token_set_ratio (75 por defecto).
+        similarity_threshold: Umbral porcentual de token_set_ratio (68 por defecto).
 
     Returns:
         Lista de TopicClusters ordenados por número de ítems y tracción.
@@ -122,6 +139,9 @@ def cluster_items(
         matched_cluster: TopicCluster = None
 
         for c in clusters:
+            if topic_phrase.lower() == c.tema_canonico.lower():
+                matched_cluster = c
+                break
             score = fuzz.token_set_ratio(topic_phrase.lower(), c.tema_canonico.lower())
             if score >= similarity_threshold:
                 matched_cluster = c

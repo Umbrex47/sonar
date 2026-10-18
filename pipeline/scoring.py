@@ -78,7 +78,24 @@ def calculate_topic_score(cluster: TopicCluster, decision: ClusterDecision) -> T
     )
     impact_multiplier = 0.40 if is_toy else (1.20 if has_enterprise_impact else 1.0)
 
-    # 6. Fórmula Ponderada con Confianza Calibrada de Jev
+    # 6. Boost de Recencia y Frescura Temporal (< 48 horas)
+    recency_boost = 0.0
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    for it in cluster.items:
+        if it.fecha:
+            try:
+                f_clean = it.fecha.replace("Z", "+00:00")
+                item_dt = datetime.fromisoformat(f_clean)
+                hours_diff = (now - item_dt).total_seconds() / 3600.0
+                if hours_diff <= 24:
+                    recency_boost = max(recency_boost, 0.08)
+                elif hours_diff <= 48:
+                    recency_boost = max(recency_boost, 0.04)
+            except Exception:
+                pass
+
+    # 7. Fórmula Ponderada con Confianza Calibrada de Jev
     conf_factor = 0.45 + (0.55 * decision.confianza)
     base_signal = (
         0.35 * crecimiento_norm
@@ -86,7 +103,7 @@ def calculate_topic_score(cluster: TopicCluster, decision: ClusterDecision) -> T
         + 0.20 * multifuente_norm
         + 0.20 * decision.encaje_audiencia
     )
-    raw_weighted = (base_signal * conf_factor * synergy_multiplier * impact_multiplier) - saturacion_penalidad
+    raw_weighted = (base_signal * conf_factor * synergy_multiplier * impact_multiplier) + recency_boost - saturacion_penalidad
 
     final_score = round(max(raw_weighted, 0.01), 3)
 
@@ -96,6 +113,7 @@ def calculate_topic_score(cluster: TopicCluster, decision: ClusterDecision) -> T
             "novedad": round(decision.novedad, 3),
             "multifuente_norm": round(multifuente_norm, 3),
             "encaje_audiencia": round(decision.encaje_audiencia, 3),
+            "recency_boost": round(recency_boost, 3),
             "factor_confianza": round(conf_factor, 3),
             "multiplicador_sinergia": round(synergy_multiplier, 2),
             "multiplicador_impacto": round(impact_multiplier, 2),
@@ -134,6 +152,8 @@ def partition_topics_funnel(
 ) -> Tuple[List[ScoredTopic], List[ScoredTopic], List[ScoredTopic]]:
     """Particiona los clusters evaluados en el embudo de decisiones:
     Retorna: (aprobados_top, en_observacion, descartados).
+    Garantiza que el Top 10 esté siempre completo incorporando las señales
+    emergentes más prometedoras de observación si los aprobados multi-fuente son menores a top_n.
     """
     aprobados_candidatos: List[ScoredTopic] = []
     en_observacion: List[ScoredTopic] = []
@@ -150,9 +170,24 @@ def partition_topics_funnel(
         else:
             aprobados_candidatos.append(st)
 
-    aprobados_top = aprobados_candidatos[:top_n]
+    aprobados_top = list(aprobados_candidatos[:top_n])
+
+    # Si los aprobados son menores a top_n, completar con las mejores señales emergentes de observación
+    if len(aprobados_top) < top_n and en_observacion:
+        faltantes = top_n - len(aprobados_top)
+        promovidos = en_observacion[:faltantes]
+        for p in promovidos:
+            p.decision.fase = "naciendo"
+            if p.decision.audit:
+                p.decision.audit.motivo_veredicto = (
+                    "Señal emergente destacada en escaneo reciente (en observación activa con alta tracción)."
+                )
+        aprobados_top.extend(promovidos)
+        en_observacion = en_observacion[faltantes:]
+
     # Los aprobados restantes pasan al backlog de observación
-    en_observacion.extend(aprobados_candidatos[top_n:])
+    if len(aprobados_candidatos) > top_n:
+        en_observacion.extend(aprobados_candidatos[top_n:])
 
     return aprobados_top, en_observacion, descartados
 

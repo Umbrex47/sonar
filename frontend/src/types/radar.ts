@@ -75,6 +75,8 @@ export interface TrendItem {
   sparkline?: string;
   novedad?: number;
   veredicto_critico?: CriticVerdictData;
+  cambio_posicion?: string;
+  es_nuevo?: boolean;
 }
 
 export interface DiscardedItem {
@@ -100,6 +102,8 @@ export interface ReportData {
   semana: string;
   generado: string;
   total_clusters_evaluados: number;
+  nuevas_tendencias_top?: number;
+  nuevas_piezas_ingestadas?: number;
   embudo_metricas?: {
     total_evaluados: number;
     aprobados_top: number;

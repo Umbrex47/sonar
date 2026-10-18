@@ -222,7 +222,8 @@ class WebSearchSource(BaseSource):
         super().__init__(timeout=timeout)
 
     def _get_queries(self) -> List[str]:
-        """Obtiene las consultas activas combinando todos los enfoques dinámicos y las semillas estándar."""
+        """Obtiene consultas rotativas combinando enfoques dinámicos y semillas estándar."""
+        import random
         queries: List[str] = []
 
         try:
@@ -231,18 +232,21 @@ class WebSearchSource(BaseSource):
             active_f = [f for f in focuses if f.activo]
             for f in active_f:
                 if f.keywords:
-                    # Usar las principales palabras clave del enfoque
-                    q_focus = f"{' '.join(f.keywords[:2])} 2026"
+                    kw_pair = random.sample(f.keywords, min(2, len(f.keywords)))
+                    q_focus = f"{' '.join(kw_pair)} 2026"
                     if q_focus not in queries:
                         queries.append(q_focus)
         except Exception as e:
             logger.warning("No se pudieron cargar enfoques dinámicos para WebSearch: %s", e)
 
-        for q in DEFAULT_SEARCH_QUERIES:
+        defaults_shuffled = list(DEFAULT_SEARCH_QUERIES)
+        random.shuffle(defaults_shuffled)
+        for q in defaults_shuffled:
             if q not in queries:
                 queries.append(q)
 
-        return queries
+        random.shuffle(queries)
+        return queries[:5]
 
     def fetch(self, limit: int = 50) -> List[RawItem]:
         """Ejecuta búsquedas automáticas en la web con el Scraper Híbrido y consolida resultados."""

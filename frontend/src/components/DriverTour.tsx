@@ -294,10 +294,28 @@ export function DriverTour() {
   const driverInstanceRef = useRef<Driver | null>(null);
   const activePathRef = useRef<string>("");
   const isCancelledRef = useRef<boolean>(false);
-  const dismissedInCurrentVisitRef = useRef<Record<string, boolean>>({});
   const [currentTourTitle, setCurrentTourTitle] = useState<string>("");
 
   const getCleanPath = (p: string) => (p === "" ? "/" : p);
+
+  const isTourDismissed = (): boolean => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("sonar_tour_dismissed") === "true";
+  };
+
+  const markTourDismissed = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sonar_tour_dismissed", "true");
+    }
+  };
+
+  const isIntroActive = (): boolean => {
+    if (typeof window === "undefined") return false;
+    if (sessionStorage.getItem("sonar_intro_viewed") === "true") return false;
+    if ((window as any).__sonar_intro_active === true) return true;
+    if (document.querySelector(".sonar-intro-overlay")) return true;
+    return false;
+  };
 
   const startTour = (force = false) => {
     const tourKey = getCleanPath(pathname);
@@ -305,8 +323,13 @@ export function DriverTour() {
 
     if (!tourConfig) return;
 
-    // Si no es forzado y el usuario ya cerró este tour en la visita actual a esta ruta, no reabrir en bucle
-    if (!force && dismissedInCurrentVisitRef.current[tourKey]) {
+    // Si no es forzado y el usuario ya cerró el tutorial, nunca auto-abrir
+    if (!force && isTourDismissed()) {
+      return;
+    }
+
+    // Si no es forzado y la intro aún está activa, esperar a que cierre
+    if (!force && isIntroActive()) {
       return;
     }
 
@@ -320,10 +343,15 @@ export function DriverTour() {
 
     isCancelledRef.current = false;
     let attempts = 0;
-    const maxAttempts = 15; // Hasta 2.5 segundos de sondeo
+    const maxAttempts = 20;
 
     const checkAndDrive = () => {
       if (isCancelledRef.current || getCleanPath(window.location.pathname) !== tourKey) {
+        return;
+      }
+
+      // Si no es forzado y fue cerrado mientras sondeaba, abortar
+      if (!force && isTourDismissed()) {
         return;
       }
 
@@ -345,8 +373,13 @@ export function DriverTour() {
             prevBtnText: "← Anterior",
             progressText: "{{current}} de {{total}}",
             steps: availableSteps,
+            onCloseClick: () => {
+              markTourDismissed();
+              driverInstanceRef.current?.destroy();
+            },
             onDestroyed: () => {
-              dismissedInCurrentVisitRef.current[tourKey] = true;
+              markTourDismissed();
+              driverInstanceRef.current = null;
             },
           });
 
@@ -363,7 +396,7 @@ export function DriverTour() {
       }
     };
 
-    // Pequeño retardo inicial para dar prioridad al renderizado
+    // Pequeño retardo inicial para asegurar renderizado en pantalla
     setTimeout(checkAndDrive, 200);
   };
 
@@ -373,19 +406,38 @@ export function DriverTour() {
     const tourConfig = ROUTE_TOURS[cleanPath];
     setCurrentTourTitle(tourConfig ? tourConfig.title : "");
 
-    // Resetear flag de descarte al entrar a una sección nueva para que cada sección tenga su tour
-    dismissedInCurrentVisitRef.current[cleanPath] = false;
+    let autoStartTimer: NodeJS.Timeout | null = null;
 
-    // Escuchar evento manual
+    // Escuchar evento manual para forzar la apertura del tour (sidebar o floating)
     const handleManualTrigger = () => startTour(true);
     window.addEventListener("start-radar-tour", handleManualTrigger);
 
-    // Auto-iniciar tour específico de esta sección
-    startTour(false);
+    // Escuchar evento cuando la intro termine o sea omitida
+    const handleIntroFinished = () => {
+      if (!isTourDismissed()) {
+        setTimeout(() => {
+          if (!isCancelledRef.current && !isTourDismissed()) {
+            startTour(false);
+          }
+        }, 500);
+      }
+    };
+    window.addEventListener("sonar-intro-finished", handleIntroFinished);
+
+    // Si no ha sido descartado y la intro no está activa, auto-iniciar con retardo
+    if (!isTourDismissed() && !isIntroActive()) {
+      autoStartTimer = setTimeout(() => {
+        if (!isCancelledRef.current && !isTourDismissed()) {
+          startTour(false);
+        }
+      }, 500);
+    }
 
     return () => {
       isCancelledRef.current = true;
+      if (autoStartTimer) clearTimeout(autoStartTimer);
       window.removeEventListener("start-radar-tour", handleManualTrigger);
+      window.removeEventListener("sonar-intro-finished", handleIntroFinished);
       if (driverInstanceRef.current) {
         try {
           driverInstanceRef.current.destroy();

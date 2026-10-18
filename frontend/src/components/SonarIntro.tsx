@@ -30,6 +30,11 @@ export function SonarIntro({ onFinish, forceShow = false }: SonarIntroProps) {
 
     if (!overlayRef.current) {
       setIsVisible(false);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("sonar_intro_viewed", "true");
+        (window as any).__sonar_intro_active = false;
+        window.dispatchEvent(new CustomEvent("sonar-intro-finished"));
+      }
       onFinish?.();
       return;
     }
@@ -43,6 +48,8 @@ export function SonarIntro({ onFinish, forceShow = false }: SonarIntroProps) {
         setIsVisible(false);
         if (typeof window !== "undefined") {
           sessionStorage.setItem("sonar_intro_viewed", "true");
+          (window as any).__sonar_intro_active = false;
+          window.dispatchEvent(new CustomEvent("sonar-intro-finished"));
         }
         onFinish?.();
       },
@@ -55,9 +62,14 @@ export function SonarIntro({ onFinish, forceShow = false }: SonarIntroProps) {
       const alreadySeen = sessionStorage.getItem("sonar_intro_viewed");
       if (alreadySeen) {
         setIsVisible(false);
+        (window as any).__sonar_intro_active = false;
         onFinish?.();
         return;
       }
+    }
+
+    if (typeof window !== "undefined") {
+      (window as any).__sonar_intro_active = true;
     }
 
     const color2 = "#17c0fd";
@@ -160,6 +172,8 @@ export function SonarIntro({ onFinish, forceShow = false }: SonarIntroProps) {
             setIsVisible(false);
             if (typeof window !== "undefined") {
               sessionStorage.setItem("sonar_intro_viewed", "true");
+              (window as any).__sonar_intro_active = false;
+              window.dispatchEvent(new CustomEvent("sonar-intro-finished"));
             }
             onFinish?.();
           },
@@ -176,6 +190,9 @@ export function SonarIntro({ onFinish, forceShow = false }: SonarIntroProps) {
     return () => {
       ctx.revert();
       window.removeEventListener("keydown", handleKeyDown);
+      if (typeof window !== "undefined") {
+        (window as any).__sonar_intro_active = false;
+      }
     };
   }, [forceShow]);
 

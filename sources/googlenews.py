@@ -27,26 +27,32 @@ class GoogleNewsSource(BaseSource):
     BASE_URL: str = "https://news.google.com/rss/search"
 
     def _get_queries(self) -> List[str]:
-        """Genera consultas para Google News basadas en los enfoques activos."""
-        queries: List[str] = [
-            "(inteligencia artificial OR IA) (empresas OR OpenAI OR Anthropic OR CEO) when:7d",
-            "(agentes de IA OR automatizacion) (empresas OR startups) when:7d",
+        """Genera consultas para Google News con rotación dinámica basada en enfoques activos."""
+        import random
+        base_queries: List[str] = [
+            "(inteligencia artificial OR IA) (OpenAI OR Anthropic OR DeepSeek OR Gemini) when:3d",
+            "(agentes de IA OR automatización) (empresas OR startups OR ROI) when:5d",
+            "(modelos de lenguaje OR SLM OR Claude Code) when:5d",
         ]
+        focus_queries: List[str] = []
         try:
             from pipeline.focuses import load_focuses
             focuses = load_focuses()
             active_f = [f for f in focuses if f.activo]
-            for f in active_f[:6]:
+            for f in active_f:
                 if f.keywords:
-                    # Combinar palabras clave del enfoque con restricción de 7 días
-                    kw_clause = " OR ".join(f.keywords[:3])
-                    q = f"({kw_clause}) (IA OR tech) when:7d"
-                    if q not in queries:
-                        queries.append(q)
+                    kw_sample = random.sample(f.keywords, min(2, len(f.keywords)))
+                    kw_clause = " OR ".join(f'"{kw}"' if " " in kw else kw for kw in kw_sample)
+                    q = f"({kw_clause}) (IA OR tech OR empresas) when:5d"
+                    if q not in focus_queries:
+                        focus_queries.append(q)
         except Exception as e:
             logger.debug("No se pudieron cargar enfoques para Google News: %s", e)
 
-        return queries
+        # Rotar y seleccionar consultas para este escaneo
+        random.shuffle(focus_queries)
+        selected = base_queries[:2] + focus_queries[:3]
+        return selected
 
     def fetch(self, limit: int = 50) -> List[RawItem]:
         """Descarga y procesa feeds RSS de Google News a través de múltiples enfoques temáticos."""

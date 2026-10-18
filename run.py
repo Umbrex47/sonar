@@ -182,6 +182,7 @@ def build_and_save_report(
     db: Database,
     top_n: int = 10,
     output_dir: str = "out",
+    nuevas_piezas_count: int = 0,
 ) -> str:
     """Genera la narrativa para el Top N, construye el JSON con embudo y auditoría Jev y lo guarda."""
     print(f"\n✍️ [3/3] Generando Adaptación Editorial 30X y Embudo de Decisiones (Top {top_n})...")
@@ -297,6 +298,38 @@ def build_and_save_report(
     now = datetime.now(timezone.utc)
     week_str = f"{now.year}-W{now.isocalendar().week:02d}"
     report_id = f"report_{week_str}"
+    os.makedirs(output_dir, exist_ok=True)
+    out_file = os.path.join(output_dir, f"{report_id}.json")
+
+    # Comparar con reporte previo para detectar deltas de ranking y novedades
+    prev_positions: Dict[str, int] = {}
+    if os.path.exists(out_file):
+        try:
+            with open(out_file, "r", encoding="utf-8") as pf:
+                prev_data = json.load(pf)
+                for pt in prev_data.get("top_temas", []):
+                    prev_positions[pt.get("tema")] = pt.get("posicion")
+        except Exception:
+            pass
+
+    nuevas_tendencias_top = 0
+    for t in top_temas_data:
+        tema_name = t["tema"]
+        if tema_name not in prev_positions:
+            t["cambio_posicion"] = "NUEVO"
+            t["es_nuevo"] = True
+            nuevas_tendencias_top += 1
+        else:
+            prev_pos = prev_positions[tema_name]
+            cur_pos = t["posicion"]
+            diff = prev_pos - cur_pos
+            if diff > 0:
+                t["cambio_posicion"] = f"+{diff}"
+            elif diff < 0:
+                t["cambio_posicion"] = f"{diff}"
+            else:
+                t["cambio_posicion"] = "="
+            t["es_nuevo"] = False
 
     embudo_metricas = {
         "total_evaluados": len(scored_topics),
@@ -310,13 +343,13 @@ def build_and_save_report(
         "generado": now.isoformat(),
         "total_clusters_evaluados": len(scored_topics),
         "embudo_metricas": embudo_metricas,
+        "nuevas_tendencias_top": nuevas_tendencias_top,
+        "nuevas_piezas_ingestadas": nuevas_piezas_count,
         "top_temas": top_temas_data,
         "temas_en_observacion": observacion_data,
         "temas_descartados": descartados_data,
     }
 
-    os.makedirs(output_dir, exist_ok=True)
-    out_file = os.path.join(output_dir, f"{report_id}.json")
     try:
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -583,10 +616,10 @@ def main() -> None:
             build_and_save_report(scored, db, top_n=args.top)
             render_terminal_report(scored, top_n=args.top)
     elif args.command == "run-all":
-        run_ingest(db)
+        count = run_ingest(db)
         scored = run_score(db)
         if scored:
-            build_and_save_report(scored, db, top_n=args.top)
+            build_and_save_report(scored, db, top_n=args.top, nuevas_piezas_count=count)
             render_terminal_report(scored, top_n=args.top)
 
 

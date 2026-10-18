@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -46,6 +46,20 @@ export default function TendenciasPage() {
   const [draftModalCopied, setDraftModalCopied] = useState<boolean>(false);
   const [isDraftModalEditMode, setIsDraftModalEditMode] = useState<boolean>(false);
   const [editedDraftModalBody, setEditedDraftModalBody] = useState<string>("");
+  const [onlyNew, setOnlyNew] = useState<boolean>(false);
+
+  // Referencias para scroll responsivo en modal de borrador
+  const modalDraftBodyRef = useRef<HTMLDivElement>(null);
+  const modalDraftTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleModalDraftWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const scrollTarget = isDraftModalEditMode ? modalDraftTextareaRef.current : modalDraftBodyRef.current;
+    if (!scrollTarget) return;
+
+    if (!scrollTarget.contains(e.target as Node) && e.target !== scrollTarget) {
+      scrollTarget.scrollTop += e.deltaY;
+    }
+  };
 
   const {
     setReportWeek,
@@ -172,7 +186,9 @@ export default function TendenciasPage() {
       selectedFormat === "todos" ||
       t.formato.toLowerCase() === selectedFormat.toLowerCase();
 
-    return matchesSearch && matchesFormat;
+    const matchesNew = !onlyNew || Boolean(t.es_nuevo) || (Boolean(t.cambio_posicion) && t.cambio_posicion !== "=");
+
+    return matchesSearch && matchesFormat && matchesNew;
   });
 
   return (
@@ -279,6 +295,25 @@ export default function TendenciasPage() {
                   ? `Transmitiendo stdout en tiempo real: ${runState.logs.length} líneas registradas.`
                   : "Visualiza línea a línea la recolección en YouTube, Google News, Hacker News, clustering y evaluación JEV."}
               </p>
+              {report && !runState.is_running && (
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] font-mono">
+                  <span className="text-[#72706b]">Semana: {report.semana}</span>
+                  <span className="text-[#d1d1cd]">•</span>
+                  <span className="text-[#016a71] font-medium">
+                    {report.nuevas_piezas_ingestadas
+                      ? `+${report.nuevas_piezas_ingestadas} piezas frescas indexadas en este ciclo`
+                      : `${report.total_clusters_evaluados} clusters analizados`}
+                  </span>
+                  {Boolean(report.nuevas_tendencias_top) && (
+                    <>
+                      <span className="text-[#d1d1cd]">•</span>
+                      <span className="text-[#059669] font-medium">
+                        ★ {report.nuevas_tendencias_top} nuevas tendencias en Top 10
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -520,7 +555,19 @@ export default function TendenciasPage() {
           />
         </div>
 
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setOnlyNew(!onlyNew)}
+            className={`px-2.5 py-1.5 rounded-[6px] text-xs font-mono transition cursor-pointer flex items-center space-x-1.5 border ${
+              onlyNew
+                ? "bg-[#016a71] text-[#faf8f5] border-[#016a71] font-medium"
+                : "bg-[#faf8f5] text-[#72706b] border-[#d1d1cd] hover:text-[#27251e]"
+            }`}
+            title="Filtrar temas con novedades o movimientos en el último escaneo"
+          >
+            <span>★ Novedades y Movimientos</span>
+          </button>
           <select
             value={selectedFormat}
             onChange={(e) => setSelectedFormat(e.target.value)}
@@ -585,13 +632,48 @@ export default function TendenciasPage() {
             >
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div className="flex items-start space-x-3">
-                  <span className="w-8 h-8 rounded-[4px] bg-[#faf8f5] border border-[#d1d1cd] text-[#27251e] font-mono font-medium flex items-center justify-center text-xs shrink-0">
-                    #{t.posicion}
-                  </span>
+                  <div className="flex flex-col items-center shrink-0 space-y-1">
+                    <span className="w-8 h-8 rounded-[4px] bg-[#faf8f5] border border-[#d1d1cd] text-[#27251e] font-mono font-medium flex items-center justify-center text-xs">
+                      #{t.posicion}
+                    </span>
+                    {t.cambio_posicion && (
+                      <span
+                        className={`text-[9px] font-mono font-semibold px-1 py-0.5 rounded-[3px] border ${
+                          t.cambio_posicion === 'NUEVO' || t.es_nuevo
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                            : t.cambio_posicion.startsWith('+')
+                            ? 'bg-teal-50 text-teal-700 border-teal-300'
+                            : t.cambio_posicion.startsWith('-')
+                            ? 'bg-amber-50 text-amber-700 border-amber-300'
+                            : 'bg-stone-50 text-stone-500 border-stone-200'
+                        }`}
+                        title={
+                          t.cambio_posicion === 'NUEVO'
+                            ? 'Nueva entrada en este escaneo'
+                            : `Variación de posición: ${t.cambio_posicion}`
+                        }
+                      >
+                        {t.cambio_posicion === 'NUEVO'
+                          ? '★ NUEVO'
+                          : t.cambio_posicion.startsWith('+')
+                          ? `▲ ${t.cambio_posicion}`
+                          : t.cambio_posicion.startsWith('-')
+                          ? `▼ ${t.cambio_posicion}`
+                          : '='}
+                      </span>
+                    )}
+                  </div>
                   <div className="space-y-1">
-                    <h2 className="text-base sm:text-lg font-medium text-[#27251e] tracking-tight">
-                      {t.tema}
-                    </h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-base sm:text-lg font-medium text-[#27251e] tracking-tight">
+                        {t.tema}
+                      </h2>
+                      {t.es_nuevo && (
+                        <span className="font-mono text-[9px] font-semibold px-1.5 py-0.5 rounded-[3px] bg-emerald-100/70 text-emerald-800 border border-emerald-300 uppercase">
+                          NUEVO EN TOP
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                       <span className="font-mono text-[9px] px-2 py-0.5 rounded-[3px] bg-[#016a71]/10 text-[#016a71] border border-[#016a71]/25">
                         {t.fase}
@@ -855,9 +937,17 @@ export default function TendenciasPage() {
 
       {/* Modal de Previsualización de Borrador Generado con LLM */}
       {createdDraft && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-[#fdfbfa] border border-[#d1d1cd] rounded-[8px] max-w-2xl w-full p-5 space-y-4 shadow-lg text-[#27251e]">
-            <div className="flex items-center justify-between pb-3 border-b border-[#d1d1cd]">
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setCreatedDraft(null);
+          }}
+        >
+          <div
+            onWheel={handleModalDraftWheel}
+            className="bg-[#fdfbfa] border border-[#d1d1cd] rounded-[8px] max-w-2xl w-full p-5 space-y-4 shadow-lg text-[#27251e] max-h-[90vh] flex flex-col my-auto"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[#d1d1cd] shrink-0">
               <div className="flex items-center space-x-2">
                 <div className="w-7 h-7 rounded-[4px] bg-[#016a71]/10 flex items-center justify-center text-[#016a71]">
                   <Sparkles className="w-4 h-4" />
@@ -879,7 +969,7 @@ export default function TendenciasPage() {
               </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
               <h4 className="text-sm font-medium text-[#27251e]">{createdDraft.titulo}</h4>
 
               {/* Switch de Vista Previa vs Modo Editor */}
@@ -918,13 +1008,18 @@ export default function TendenciasPage() {
 
             {isDraftModalEditMode ? (
               <textarea
+                ref={modalDraftTextareaRef}
                 value={editedDraftModalBody}
                 onChange={(e) => setEditedDraftModalBody(e.target.value)}
                 placeholder="Edita el guión en formato Markdown..."
-                className="w-full h-[360px] bg-[#faf8f5] border border-[#016a71] rounded-[6px] p-4 text-[#27251e] font-mono text-xs sm:text-[13px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#016a71] resize-y shadow-inner"
+                className="w-full flex-1 min-h-[320px] max-h-[55vh] bg-[#faf8f5] border border-[#016a71] rounded-[6px] p-4 text-[#27251e] font-mono text-xs sm:text-[13px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#016a71] resize-none shadow-inner overflow-y-auto overscroll-contain"
               />
             ) : (
-              <div className="bg-[#faf8f5] rounded-[6px] border border-[#d1d1cd] p-4 text-[#27251e] font-sans text-xs sm:text-[13px] leading-relaxed max-h-[380px] overflow-y-auto select-text selection:bg-[#016a71]/20">
+              <div
+                ref={modalDraftBodyRef}
+                tabIndex={0}
+                className="bg-[#faf8f5] rounded-[6px] border border-[#d1d1cd] p-4 text-[#27251e] font-sans text-xs sm:text-[13px] leading-relaxed flex-1 min-h-[220px] max-h-[55vh] overflow-y-auto select-text selection:bg-[#016a71]/20 overscroll-contain focus:outline-none focus:ring-1 focus:ring-[#016a71]/20"
+              >
                 <MarkdownRenderer content={editedDraftModalBody || createdDraft.body || createdDraft.content || "Generando redacción con LLM..."} />
               </div>
             )}
