@@ -25,10 +25,12 @@ import {
   Terminal,
   RefreshCw,
   Play,
+  Edit3,
 } from "lucide-react";
 import { ReportData, TrendItem, getApiBase } from "../types/radar";
 import { useRadar } from "../context/RadarContext";
 import { TerminalConsole } from "../components/TerminalConsole";
+import { MarkdownRenderer } from "../components/MarkdownRenderer";
 
 export default function TendenciasPage() {
   const [report, setReport] = useState<ReportData | null>(null);
@@ -42,6 +44,8 @@ export default function TendenciasPage() {
   const [generatingDraftFor, setGeneratingDraftFor] = useState<number | null>(null);
   const [createdDraft, setCreatedDraft] = useState<any | null>(null);
   const [draftModalCopied, setDraftModalCopied] = useState<boolean>(false);
+  const [isDraftModalEditMode, setIsDraftModalEditMode] = useState<boolean>(false);
+  const [editedDraftModalBody, setEditedDraftModalBody] = useState<string>("");
 
   const {
     setReportWeek,
@@ -131,7 +135,10 @@ export default function TendenciasPage() {
             data = await detailRes.json();
           }
         }
+        const draftBody = data.body || data.content || "";
         setCreatedDraft(data);
+        setEditedDraftModalBody(draftBody);
+        setIsDraftModalEditMode(false);
       }
     } catch (err) {
       console.error("Error al redactar borrador con LLM:", err);
@@ -872,13 +879,55 @@ export default function TendenciasPage() {
               </button>
             </div>
 
-            <div className="space-y-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h4 className="text-sm font-medium text-[#27251e]">{createdDraft.titulo}</h4>
+
+              {/* Switch de Vista Previa vs Modo Editor */}
+              <div className="flex items-center rounded-[6px] bg-[#f0ece1] p-0.5 border border-[#d1d1cd] shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsDraftModalEditMode(false)}
+                  className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-[4px] text-xs font-medium transition cursor-pointer ${
+                    !isDraftModalEditMode
+                      ? "bg-[#fdfbfa] text-[#016a71] shadow-2xs"
+                      : "text-[#72706b] hover:text-[#27251e]"
+                  }`}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Vista Previa</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!editedDraftModalBody) {
+                      setEditedDraftModalBody(createdDraft.body || createdDraft.content || "");
+                    }
+                    setIsDraftModalEditMode(true);
+                  }}
+                  className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-[4px] text-xs font-medium transition cursor-pointer ${
+                    isDraftModalEditMode
+                      ? "bg-[#fdfbfa] text-[#016a71] shadow-2xs"
+                      : "text-[#72706b] hover:text-[#27251e]"
+                  }`}
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Modo Editor</span>
+                </button>
+              </div>
             </div>
 
-            <div className="bg-[#faf8f5] rounded-[6px] border border-[#d1d1cd] p-4 text-[#27251e] font-sans text-xs sm:text-[13px] leading-relaxed max-h-[380px] overflow-y-auto whitespace-pre-wrap select-text selection:bg-[#016a71]/20">
-              {createdDraft.body || createdDraft.content || "Generando redacción con LLM..."}
-            </div>
+            {isDraftModalEditMode ? (
+              <textarea
+                value={editedDraftModalBody}
+                onChange={(e) => setEditedDraftModalBody(e.target.value)}
+                placeholder="Edita el guión en formato Markdown..."
+                className="w-full h-[360px] bg-[#faf8f5] border border-[#016a71] rounded-[6px] p-4 text-[#27251e] font-mono text-xs sm:text-[13px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#016a71] resize-y shadow-inner"
+              />
+            ) : (
+              <div className="bg-[#faf8f5] rounded-[6px] border border-[#d1d1cd] p-4 text-[#27251e] font-sans text-xs sm:text-[13px] leading-relaxed max-h-[380px] overflow-y-auto select-text selection:bg-[#016a71]/20">
+                <MarkdownRenderer content={editedDraftModalBody || createdDraft.body || createdDraft.content || "Generando redacción con LLM..."} />
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#d1d1cd]">
               <div className="text-[10px] font-mono text-[#92918b]">
@@ -887,7 +936,7 @@ export default function TendenciasPage() {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(createdDraft.body || createdDraft.content || "");
+                    navigator.clipboard.writeText(editedDraftModalBody || createdDraft.body || createdDraft.content || "");
                     setDraftModalCopied(true);
                     setTimeout(() => setDraftModalCopied(false), 2000);
                   }}

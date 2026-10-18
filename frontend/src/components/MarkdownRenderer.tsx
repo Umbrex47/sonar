@@ -119,8 +119,18 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       continue;
     }
 
+    const trimmed = line.trim();
+
+    // Líneas horizontales separadoras
+    if (trimmed === "---" || trimmed === "***" || trimmed === "___") {
+      flushList(i);
+      flushTable(i);
+      blocks.push(<hr key={`hr-${i}`} className="my-4 border-[#d1d1cd]" />);
+      continue;
+    }
+
     // Tablas Markdown (| col | col |)
-    if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       flushList(i);
       currentTable.push(line);
       continue;
@@ -128,49 +138,71 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       flushTable(i);
     }
 
-    // Listas con viñetas
-    if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
-      currentList.push(line.trim().substring(2));
+    // Citas / Blockquotes (> texto)
+    if (trimmed.startsWith("> ")) {
+      flushList(i);
+      blocks.push(
+        <blockquote
+          key={`quote-${i}`}
+          className="border-l-3 border-[#016a71] pl-3 py-1.5 my-2.5 bg-[#fdfbfa] italic text-[#72706b] rounded-r text-xs sm:text-[13px] leading-relaxed"
+        >
+          {formatInlineText(trimmed.replace(/^>\s*/, ""))}
+        </blockquote>
+      );
+      continue;
+    }
+
+    // Listas con viñetas (- item o * item)
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      currentList.push(trimmed.substring(2));
       continue;
     } else if (currentList.length > 0) {
       flushList(i);
     }
 
-    // Encabezados
-    if (line.startsWith("### ")) {
+    // Encabezados (con o sin indentación)
+    if (trimmed.startsWith("#### ")) {
       blocks.push(
-        <h4 key={`h3-${i}`} className="text-sm sm:text-base font-medium text-[#27251e] mt-4 mb-2 flex items-center space-x-2">
-          <span>{formatInlineText(line.replace("### ", ""))}</span>
+        <h5 key={`h4-${i}`} className="text-xs sm:text-sm font-semibold text-[#27251e] mt-3 mb-1">
+          {formatInlineText(trimmed.replace(/^####\s+/, ""))}
+        </h5>
+      );
+      continue;
+    }
+    if (trimmed.startsWith("### ")) {
+      blocks.push(
+        <h4 key={`h3-${i}`} className="text-sm sm:text-base font-semibold text-[#016a71] mt-4 mb-2 flex items-center space-x-2">
+          <span>{formatInlineText(trimmed.replace(/^###\s+/, ""))}</span>
         </h4>
       );
       continue;
     }
-    if (line.startsWith("## ")) {
+    if (trimmed.startsWith("## ")) {
       blocks.push(
-        <h3 key={`h2-${i}`} className="text-base sm:text-lg font-medium text-[#27251e] mt-5 mb-2 pb-1 border-b border-[#d1d1cd]/60">
-          {formatInlineText(line.replace("## ", ""))}
+        <h3 key={`h2-${i}`} className="text-base sm:text-lg font-semibold text-[#27251e] mt-5 mb-2 pb-1 border-b border-[#d1d1cd]/60">
+          {formatInlineText(trimmed.replace(/^##\s+/, ""))}
         </h3>
       );
       continue;
     }
-    if (line.startsWith("# ")) {
+    if (trimmed.startsWith("# ")) {
       blocks.push(
-        <h2 key={`h1-${i}`} className="text-lg sm:text-xl font-medium text-[#27251e] mt-6 mb-3">
-          {formatInlineText(line.replace("# ", ""))}
+        <h2 key={`h1-${i}`} className="text-lg sm:text-xl font-bold text-[#27251e] mt-6 mb-3 pb-1 border-b border-[#d1d1cd]">
+          {formatInlineText(trimmed.replace(/^#\s+/, ""))}
         </h2>
       );
       continue;
     }
 
     // Líneas vacías
-    if (line.trim() === "") {
+    if (trimmed === "") {
       continue;
     }
 
     // Párrafo normal
     blocks.push(
       <p key={`p-${i}`} className="my-2 text-xs sm:text-[13px] text-[#27251e] leading-relaxed">
-        {formatInlineText(line)}
+        {formatInlineText(trimmed)}
       </p>
     );
   }

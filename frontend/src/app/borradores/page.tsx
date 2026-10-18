@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import ReactMarkdown from "react-markdown";
+import { MarkdownRenderer } from "../../components/MarkdownRenderer";
 import {
   FileText,
   Sparkles,
@@ -621,82 +621,8 @@ export default function BorradoresPage() {
                       <span>Cargando guión editorial...</span>
                     </div>
                   ) : (selectedDraft.body || selectedDraft.content) ? (
-                    <div className="prose prose-neutral max-w-none space-y-2">
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ children }) => (
-                            <h1 className="text-base sm:text-lg font-semibold text-[#27251e] mt-4 mb-2 pb-1 border-b border-[#d1d1cd] first:mt-0">
-                              {children}
-                            </h1>
-                          ),
-                          h2: ({ children }) => (
-                            <h2 className="text-sm sm:text-base font-semibold text-[#016a71] mt-3.5 mb-1.5 border-b border-[#d1d1cd]/50 pb-0.5 first:mt-0">
-                              {children}
-                            </h2>
-                          ),
-                          h3: ({ children }) => (
-                            <h3 className="text-xs sm:text-sm font-semibold text-[#27251e] mt-2.5 mb-1">
-                              {children}
-                            </h3>
-                          ),
-                          p: ({ children }) => (
-                            <p className="mb-2.5 text-[#27251e] leading-relaxed last:mb-0">
-                              {children}
-                            </p>
-                          ),
-                          ul: ({ children }) => (
-                            <ul className="list-disc pl-5 mb-2.5 space-y-1 text-[#27251e]">
-                              {children}
-                            </ul>
-                          ),
-                          ol: ({ children }) => (
-                            <ol className="list-decimal pl-5 mb-2.5 space-y-1 text-[#27251e]">
-                              {children}
-                            </ol>
-                          ),
-                          li: ({ children }) => (
-                            <li className="leading-relaxed">{children}</li>
-                          ),
-                          blockquote: ({ children }) => (
-                            <blockquote className="border-l-3 border-[#016a71] pl-3 py-1 my-2.5 bg-[#fdfbfa] italic text-[#72706b] rounded-r">
-                              {children}
-                            </blockquote>
-                          ),
-                          code: ({ inline, className, children, ...props }: any) => {
-                            return inline ? (
-                              <code
-                                className="bg-[#f0ece1] text-[#016a71] px-1.5 py-0.5 rounded text-[11px] font-mono"
-                                {...props}
-                              >
-                                {children}
-                              </code>
-                            ) : (
-                              <code
-                                className="block bg-[#16181d] text-[#e4e4e7] p-3 rounded-[6px] font-mono text-[11px] my-2 overflow-x-auto border border-[#27251e]/30 leading-normal"
-                                {...props}
-                              >
-                                {children}
-                              </code>
-                            );
-                          },
-                          hr: () => <hr className="my-4 border-[#d1d1cd]" />,
-                          strong: ({ children }) => (
-                            <strong className="font-semibold text-[#181816]">{children}</strong>
-                          ),
-                          a: ({ href, children }) => (
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#016a71] underline hover:text-[#025156] font-medium"
-                            >
-                              {children}
-                            </a>
-                          ),
-                        }}
-                      >
-                        {selectedDraft.body || selectedDraft.content || ""}
-                      </ReactMarkdown>
+                    <div className="space-y-2">
+                      <MarkdownRenderer content={selectedDraft.body || selectedDraft.content || ""} />
                     </div>
                   ) : (
                     <span className="text-[#92918b] italic">Sin contenido redactado para este borrador.</span>

@@ -12,6 +12,7 @@ services:
       - ./drafts:/app/drafts
       - ./out:/app/out
       - ./.env:/app/.env:ro
+      - ./frontend/out:/app/frontend/out
     environment:
       - PYTHONUNBUFFERED=1
       - PORT=8080
