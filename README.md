@@ -2,7 +2,9 @@
 
 > **Descubrimiento confiable, type-safe y de bajo costo de tendencias en Inteligencia Artificial para líderes y equipos en Latinoamérica.**
 
-Proyecto desarrollado para el **Hackathon Reto 30X — "Radar de contenido"** (Área: Media · 24h · 1 Dev).
+Proyecto desarrollado para el **Hackathon Reto 30X — "Radar de contenido"** (Área: Media · 24h · 1 Dev).  
+🌐 **Plataforma en vivo:** [https://sonar.perte.design](https://sonar.perte.design)  
+📖 **Documentación Técnica Completa:** Consulta [DOCUMENTACION.md](DOCUMENTACION.md) para la arquitectura detallada, herramientas, estado de secciones, roadmap y gotchas.
 
 ---
 
