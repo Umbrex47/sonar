@@ -2,7 +2,7 @@
 draft_id: 1
 narrative_id: libre
 titulo: Borrador API Test
-estado: borrador
+estado: en_revision
 formato: video_corto
 gancho: opinion
 autor: 30X Media
