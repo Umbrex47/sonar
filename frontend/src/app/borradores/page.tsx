@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   FileText,
   Sparkles,
@@ -19,6 +20,9 @@ import {
   Send,
   X,
   Eye,
+  Edit3,
+  Save,
+  RotateCcw,
 } from "lucide-react";
 import { DraftItem, getApiBase } from "../../types/radar";
 
@@ -30,6 +34,12 @@ export default function BorradoresPage() {
   const [copied, setCopied] = useState<boolean>(false);
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
   const [loadingBody, setLoadingBody] = useState<boolean>(false);
+
+  // Estados de modo edición y switch de vista previa
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [editedBody, setEditedBody] = useState<string>("");
+  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
   // Modal para redactar nuevo borrador
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -47,6 +57,10 @@ export default function BorradoresPage() {
 
   const handleSelectDraft = async (draft: DraftItem) => {
     setSelectedDraft(draft);
+    setEditedBody(draft.body || draft.content || "");
+    setIsEditMode(false);
+    setSaveSuccess(false);
+
     if (!draft.body && !draft.content) {
       setLoadingBody(true);
       try {
@@ -55,6 +69,7 @@ export default function BorradoresPage() {
         if (res.ok) {
           const full: DraftItem = await res.json();
           setSelectedDraft(full);
+          setEditedBody(full.body || full.content || "");
           setDrafts((prev) =>
             prev.map((d) => (d.id === draft.id ? { ...d, ...full } : d))
           );
@@ -64,6 +79,51 @@ export default function BorradoresPage() {
       } finally {
         setLoadingBody(false);
       }
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!selectedDraft) return;
+    setIsSavingDraft(true);
+    try {
+      const api = getApiBase();
+      const res = await fetch(`${api}/api/drafts/${selectedDraft.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          body: editedBody,
+          titulo: selectedDraft.titulo,
+          autor: selectedDraft.autor,
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSelectedDraft((prev) =>
+          prev ? { ...prev, ...updated, body: editedBody } : null
+        );
+        setDrafts((prev) =>
+          prev.map((d) =>
+            d.id === selectedDraft.id
+              ? {
+                  ...d,
+                  ...updated,
+                  body: editedBody,
+                  version: updated.version || d.version + 1,
+                }
+              : d
+          )
+        );
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Error al guardar borrador: ${errData.error || res.statusText}`);
+      }
+    } catch (err) {
+      console.error("Error guardando borrador:", err);
+      alert("Error de conexión al guardar el borrador");
+    } finally {
+      setIsSavingDraft(false);
     }
   };
 
@@ -391,10 +451,41 @@ export default function BorradoresPage() {
                     </span>
                   </div>
 
-                  {/* Actions: Copy & Workflow */}
-                  <div className="flex items-center space-x-2">
+                  {/* Actions: Edit Mode Switch & Copy */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Switch de Vista Previa vs Modo Editor */}
+                    <div className="flex items-center rounded-[6px] bg-[#f0ece1] p-0.5 border border-[#d1d1cd]">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditMode(false)}
+                        className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-[4px] text-xs font-medium transition cursor-pointer ${
+                          !isEditMode
+                            ? "bg-[#fdfbfa] text-[#016a71] shadow-2xs"
+                            : "text-[#72706b] hover:text-[#27251e]"
+                        }`}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Vista Previa</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditedBody(selectedDraft.body || selectedDraft.content || "");
+                          setIsEditMode(true);
+                        }}
+                        className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-[4px] text-xs font-medium transition cursor-pointer ${
+                          isEditMode
+                            ? "bg-[#fdfbfa] text-[#016a71] shadow-2xs"
+                            : "text-[#72706b] hover:text-[#27251e]"
+                        }`}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Modo Editor</span>
+                      </button>
+                    </div>
+
                     <button
-                      onClick={() => copyToClipboard(selectedDraft.body || selectedDraft.content || "")}
+                      onClick={() => copyToClipboard(isEditMode ? editedBody : (selectedDraft.body || selectedDraft.content || ""))}
                       className="flex items-center space-x-1.5 px-2.5 py-1 rounded-[4px] border border-[#d1d1cd] text-xs text-[#27251e] hover:bg-[#d1d1cd]/20 transition cursor-pointer"
                     >
                       {copied ? (
@@ -467,19 +558,151 @@ export default function BorradoresPage() {
                 </div>
               </div>
 
-              {/* Script / Body Content View */}
-              <div className="bg-[#faf8f5] rounded-[6px] border border-[#d1d1cd] p-4 text-[#27251e] font-sans text-xs sm:text-[13px] leading-relaxed max-h-[600px] overflow-y-auto whitespace-pre-wrap select-text selection:bg-[#016a71]/20">
-                {loadingBody ? (
-                  <div className="flex items-center space-x-2 text-[#72706b] py-8 justify-center font-mono text-xs">
-                    <RefreshCw className="w-4 h-4 animate-spin text-[#016a71]" />
-                    <span>Cargando guión editorial...</span>
+              {/* Script / Body Content: Markdown Viewer vs Editor */}
+              {isEditMode ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs pb-1 border-b border-[#d1d1cd]/60">
+                    <span className="font-mono text-[10px] text-[#72706b] uppercase tracking-wider flex items-center space-x-1.5">
+                      <Edit3 className="w-3 h-3 text-[#016a71]" />
+                      <span>Editor Markdown en Vivo</span>
+                    </span>
+                    <div className="flex items-center space-x-3">
+                      {saveSuccess && (
+                        <span className="text-[#016a71] font-mono text-xs flex items-center space-x-1 animate-in fade-in">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>¡Guardado con éxito!</span>
+                        </span>
+                      )}
+                      <span className="font-mono text-[10px] text-[#92918b]">
+                        {editedBody.trim() ? editedBody.trim().split(/\s+/).length : 0} palabras • {editedBody.length} caracteres
+                      </span>
+                    </div>
                   </div>
-                ) : (
-                  selectedDraft.body || selectedDraft.content || (
+
+                  <textarea
+                    value={editedBody}
+                    onChange={(e) => setEditedBody(e.target.value)}
+                    placeholder="Escribe o edita el guión en formato Markdown..."
+                    className="w-full h-[480px] bg-[#faf8f5] border border-[#016a71] rounded-[6px] p-4 text-[#27251e] font-mono text-xs sm:text-[13px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#016a71] resize-y shadow-inner"
+                  />
+
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditedBody(selectedDraft.body || selectedDraft.content || "");
+                      }}
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-[4px] border border-[#d1d1cd] text-xs text-[#72706b] hover:text-[#27251e] hover:bg-[#d1d1cd]/20 transition cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Restaurar texto original</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isSavingDraft}
+                      onClick={handleSaveDraft}
+                      className="flex items-center space-x-1.5 px-4 py-1.5 rounded-[4px] bg-[#016a71] hover:bg-[#025156] text-[#faf8f5] text-xs font-medium shadow-xs transition cursor-pointer disabled:opacity-50"
+                    >
+                      {isSavingDraft ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Save className="w-3.5 h-3.5" />
+                      )}
+                      <span>{isSavingDraft ? "Guardando..." : "Guardar Cambios"}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-[#faf8f5] rounded-[6px] border border-[#d1d1cd] p-5 text-[#27251e] font-sans text-xs sm:text-[13px] leading-relaxed max-h-[600px] overflow-y-auto select-text selection:bg-[#016a71]/20">
+                  {loadingBody ? (
+                    <div className="flex items-center space-x-2 text-[#72706b] py-8 justify-center font-mono text-xs">
+                      <RefreshCw className="w-4 h-4 animate-spin text-[#016a71]" />
+                      <span>Cargando guión editorial...</span>
+                    </div>
+                  ) : (selectedDraft.body || selectedDraft.content) ? (
+                    <div className="prose prose-neutral max-w-none space-y-2">
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="text-base sm:text-lg font-semibold text-[#27251e] mt-4 mb-2 pb-1 border-b border-[#d1d1cd] first:mt-0">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-sm sm:text-base font-semibold text-[#016a71] mt-3.5 mb-1.5 border-b border-[#d1d1cd]/50 pb-0.5 first:mt-0">
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-xs sm:text-sm font-semibold text-[#27251e] mt-2.5 mb-1">
+                              {children}
+                            </h3>
+                          ),
+                          p: ({ children }) => (
+                            <p className="mb-2.5 text-[#27251e] leading-relaxed last:mb-0">
+                              {children}
+                            </p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc pl-5 mb-2.5 space-y-1 text-[#27251e]">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal pl-5 mb-2.5 space-y-1 text-[#27251e]">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="leading-relaxed">{children}</li>
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-3 border-[#016a71] pl-3 py-1 my-2.5 bg-[#fdfbfa] italic text-[#72706b] rounded-r">
+                              {children}
+                            </blockquote>
+                          ),
+                          code: ({ inline, className, children, ...props }: any) => {
+                            return inline ? (
+                              <code
+                                className="bg-[#f0ece1] text-[#016a71] px-1.5 py-0.5 rounded text-[11px] font-mono"
+                                {...props}
+                              >
+                                {children}
+                              </code>
+                            ) : (
+                              <code
+                                className="block bg-[#16181d] text-[#e4e4e7] p-3 rounded-[6px] font-mono text-[11px] my-2 overflow-x-auto border border-[#27251e]/30 leading-normal"
+                                {...props}
+                              >
+                                {children}
+                              </code>
+                            );
+                          },
+                          hr: () => <hr className="my-4 border-[#d1d1cd]" />,
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-[#181816]">{children}</strong>
+                          ),
+                          a: ({ href, children }) => (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#016a71] underline hover:text-[#025156] font-medium"
+                            >
+                              {children}
+                            </a>
+                          ),
+                        }}
+                      >
+                        {selectedDraft.body || selectedDraft.content || ""}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
                     <span className="text-[#92918b] italic">Sin contenido redactado para este borrador.</span>
-                  )
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {selectedDraft.file_path && (
                 <div className="text-[10px] font-mono text-[#92918b] truncate pt-1">
