@@ -42,3 +42,54 @@ def test_heuristic_calibrate_fast_short():
     assert dec.formato == "video_corto"
     assert dec.novedad >= 0.8
     assert dec.confianza >= 0.75
+    assert dec.audit is not None
+    assert len(dec.audit.preguntas) == 5
+    assert dec.audit.veredicto in ("APROBADO", "EN_OBSERVACION", "DESCARTADO")
+    assert len(dec.audit.motivo_veredicto) > 10
+
+
+def test_audit_trail_toy_project_discarded():
+    cluster = TopicCluster(
+        cluster_id="toy1",
+        tema_canonico="Calorie tracker rewrite one turn",
+        items=[
+            RawItem(
+                id="toy-1",
+                fuente="HackerNews",
+                titulo="Calorie tracker rewrite one turn with AI",
+                url="https://example.com/hn1",
+            )
+        ],
+        fuentes=["HackerNews"],
+        total_menciones=1,
+    )
+    dec = _heuristic_calibrate(cluster)
+    assert dec.audit is not None
+    assert dec.audit.veredicto == "DESCARTADO"
+    assert "juguete" in dec.audit.motivo_veredicto.lower()
+
+
+def test_decision_cache():
+    from pipeline.decide import decide_cluster, clear_decision_cache, _DECISION_CACHE
+    clear_decision_cache()
+    cluster = TopicCluster(
+        cluster_id="cache-1",
+        tema_canonico="Modelos de razonamiento en producción",
+        items=[
+            RawItem(
+                id="c-1",
+                fuente="WebSearch",
+                titulo="Modelos de razonamiento en producción para empresas",
+                url="https://example.com/cache1",
+            )
+        ],
+        fuentes=["WebSearch"],
+        total_menciones=1,
+    )
+    dec1 = decide_cluster(cluster)
+    assert len(_DECISION_CACHE) == 1
+    dec2 = decide_cluster(cluster)
+    assert dec1 is dec2  # Idéntica referencia desde caché
+    clear_decision_cache()
+    assert len(_DECISION_CACHE) == 0
+

@@ -29,18 +29,36 @@ class NewslettersSource(BaseSource):
     FEEDS = [
         ("The Rundown AI", "https://www.therundown.ai/feed"),
         ("Startups LatAm", "https://startupslatam.com/feed/"),
-        ("Rest of World", "https://restofworld.org/feed/"),
+        ("Rest of World", "https://restofworld.org/feed/latest/"),
         ("TechCrunch AI", "https://techcrunch.com/category/artificial-intelligence/feed/"),
+        ("Latent Space", "https://www.latent.space/feed"),
+        ("Interconnects", "https://www.interconnects.ai/feed"),
+        ("Import AI", "https://importai.substack.com/feed"),
+        ("Simon Willison", "https://simonwillison.net/atom/everything/"),
+        ("OpenAI News", "https://openai.com/news/rss.xml"),
+        ("Hugging Face Blog", "https://huggingface.co/blog/feed.xml"),
+        ("ArXiv cs.AI", "https://rss.arxiv.org/rss/cs.AI"),
+        ("MIT Tech Review", "https://www.technologyreview.com/topic/artificial-intelligence/feed/"),
     ]
 
-    def fetch(self, limit: int = 30) -> List[RawItem]:
+    def fetch(self, limit: int = 40) -> List[RawItem]:
         """Descarga y filtra artículos recientes con relevancia para la audiencia de 30X."""
         items: List[RawItem] = []
+        import re
+        import time
+
         ai_keywords = [
-            "ai", "ia", "agent", "llm", "slm", "model", "rag", "automation",
+            "ai", "ia", "agent", "agente", "llm", "slm", "model", "rag", "automation",
             "automatiz", "startup", "founder", "operaciones", "banca", "fintech",
-            "inversion", "venture", "latam", "software", "tecnologia"
+            "inversion", "venture", "latam", "software", "tecnologia", "deepseek",
+            "openai", "anthropic", "meta", "llama", "prompt", "benchmark", "eval",
+            "evals", "reasoning", "coding", "workflow", "inference", "gpu", "token"
         ]
+
+        inherently_ai_publications = {
+            "The Rundown AI", "Latent Space", "Interconnects", "Import AI",
+            "OpenAI News", "Hugging Face Blog", "ArXiv cs.AI", "TechCrunch AI", "MIT Tech Review"
+        }
 
         try:
             with httpx.Client(
@@ -48,6 +66,7 @@ class NewslettersSource(BaseSource):
                 follow_redirects=True,
                 headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Radar30XBot/1.0"},
             ) as client:
+                per_feed_limit = max(3, limit // len(self.FEEDS) + 2)
                 for publication_name, feed_url in self.FEEDS:
                     try:
                         resp = client.get(feed_url)
@@ -56,50 +75,64 @@ class NewslettersSource(BaseSource):
                             continue
 
                         feed = feedparser.parse(resp.content)
-                        for entry in feed.entries[: limit // len(self.FEEDS) + 4]:
+                        for entry in feed.entries[:per_feed_limit]:
                             title = getattr(entry, "title", "").strip()
                             if not title:
                                 continue
 
-                            summary = getattr(entry, "summary", "").strip()
-                            combined_text = f"{title} {summary}".lower()
+                            # Obtener resumen o descripción y limpiar etiquetas HTML
+                            raw_summary = (
+                                getattr(entry, "summary", "")
+                                or getattr(entry, "description", "")
+                            )
+                            if not raw_summary and hasattr(entry, "content") and entry.content:
+                                raw_summary = entry.content[0].get("value", "")
+                            clean_summary = re.sub(r"<[^>]+>", " ", str(raw_summary))
+                            clean_summary = re.sub(r"\s+", " ", clean_summary).strip()
 
-                            # Descartar ruido geopolítico o temas no relacionados a IA y tecnología
+                            combined_text = f"{title} {clean_summary}".lower()
+
+                            # Descartar ruido evidente no relacionado con tecnología / IA
                             noise_keywords = ["freight", "shipping fleet", "red sea", "ev shipping", "petroleo", "kindergarten", "gaza", "yemen"]
                             if any(nk in combined_text for nk in noise_keywords):
                                 continue
 
-                            # Filtrar solo piezas con relevancia a tecnología, IA o negocios
-                            if not any(kw in combined_text for kw in ai_keywords):
-                                continue
+                            # Filtrar solo piezas con relevancia si la fuente no es 100% IA
+                            if publication_name not in inherently_ai_publications:
+                                if not any(kw in combined_text for kw in ai_keywords):
+                                    continue
 
-                            # Filtro de recencia (últimos 8 días)
-                            import time
-                            pub_parsed = getattr(entry, "published_parsed", None)
+                            # Filtro de recencia (últimos 10 días para captar análisis de fin de semana)
+                            pub_parsed = getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
                             if pub_parsed:
                                 pub_ts = time.mktime(pub_parsed)
-                                if time.time() - pub_ts > (8 * 86400):
+                                if time.time() - pub_ts > (10 * 86400):
                                     continue
 
                             link = getattr(entry, "link", "").strip()
-                            author = getattr(entry, "author", publication_name)
-                            published = getattr(entry, "published", "") or datetime.now(timezone.utc).isoformat()
+                            author = getattr(entry, "author", "") or publication_name
+                            published = (
+                                getattr(entry, "published", "")
+                                or getattr(entry, "updated", "")
+                                or datetime.now(timezone.utc).isoformat()
+                            )
 
-                            item_id = hashlib.sha256(f"nl:{link or title}".encode()).hexdigest()[:16]
+                            item_id = hashlib.sha256(f"nl:{publication_name}:{link or title}".encode()).hexdigest()[:16]
 
                             items.append(
                                 RawItem(
                                     id=item_id,
                                     fuente=f"{publication_name}",
                                     titulo=title,
-                                    resumen=summary[:300].strip(),
-                                    url=link,
+                                    resumen=clean_summary[:350].strip(),
+                                    url=link or feed_url,
                                     autor=author,
                                     fecha=published,
                                     metricas={
                                         "formato": "articulo",
-                                        "tipo_fuente": "newsletter",
-                                        "relevancia": 1.2,
+                                        "tipo_fuente": "newsletter_rss",
+                                        "publicacion": publication_name,
+                                        "relevancia": 1.3 if publication_name in inherently_ai_publications else 1.1,
                                     },
                                 )
                             )
@@ -108,5 +141,5 @@ class NewslettersSource(BaseSource):
         except Exception as exc:
             logger.error("Error en NewslettersSource: %s", exc)
 
-        logger.info("Newsletters: %d ítems recolectados.", len(items))
+        logger.info("Newsletters: %d ítems recolectados desde %d feeds.", len(items), len(self.FEEDS))
         return items

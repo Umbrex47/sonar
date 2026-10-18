@@ -14,6 +14,8 @@ from sources.reddit import RedditSource
 from sources.manual import ManualCSVSource
 from sources.huggingface import HuggingFaceSource
 from sources.newsletters import NewslettersSource
+from sources.rssapp import RSSAppSource
+from sources.websearch import WebSearchSource
 
 __all__ = [
     "BaseSource",
@@ -27,6 +29,8 @@ __all__ = [
     "ManualCSVSource",
     "HuggingFaceSource",
     "NewslettersSource",
+    "RSSAppSource",
+    "WebSearchSource",
     "get_default_sources",
 ]
 
@@ -37,7 +41,9 @@ def get_default_sources(include_optional: bool = True) -> List[BaseSource]:
         HackerNewsSource(),
         YouTubeSource(),
         GoogleNewsSource(),
+        WebSearchSource(),
         NewslettersSource(),
+        RSSAppSource(),
         HuggingFaceSource(),
         MediumSource(),
         GitHubSource(),
@@ -46,3 +52,4 @@ def get_default_sources(include_optional: bool = True) -> List[BaseSource]:
     if include_optional:
         sources.append(RedditSource())
     return sources
+

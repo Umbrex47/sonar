@@ -51,17 +51,23 @@ logger = logging.getLogger("radar30x")
 
 
 def run_ingest(db: Database) -> int:
-    """Ejecuta la ingesta de todas las fuentes públicas activadas."""
-    print("\n🔍 [1/3] Iniciando Ingesta de Fuentes Públicas...")
+    """Ejecuta la ingesta de todas las fuentes públicas activadas con soporte del Scraper Híbrido."""
+    print("\n🔍 [1/3] Iniciando Ingesta de Fuentes Públicas con Scraper Híbrido Multi-Motor...")
     sources = get_default_sources(include_optional=True)
     all_items = []
 
     for src in sources:
         try:
-            print(f"  -> Conectando con {src.name}...")
-            items = src.fetch(limit=35)
+            extra_tag = ""
+            if src.name in ("WebSearch", "GoogleNews"):
+                extra_tag = " (Scraper Híbrido Multi-Enfoque)"
+            print(f"  -> Conectando con {src.name}{extra_tag}...")
+            limit = 45 if src.name in ("WebSearch", "GoogleNews") else 35
+            items = src.fetch(limit=limit)
             all_items.extend(items)
-            print(f"     ✅ {src.name}: {len(items)} ítems obtenidos.")
+            enriched_count = sum(1 for it in items if it.metricas.get("enriquecido") == 1)
+            enrich_info = f" ({enriched_count} enriquecidos con Markdown profundo)" if enriched_count > 0 else ""
+            print(f"     ✅ {src.name}: {len(items)} ítems obtenidos{enrich_info}.")
         except Exception as exc:
             print(f"     ⚠️ {src.name} reportó un error: {exc}")
 
@@ -177,16 +183,70 @@ def build_and_save_report(
     top_n: int = 10,
     output_dir: str = "out",
 ) -> str:
-    """Genera la narrativa para el Top N, construye el JSON y lo guarda en disco y SQLite."""
-    print(f"\n✍️ [3/3] Generando Adaptación Editorial 30X para el Top {top_n}...")
-    top = scored_topics[:top_n]
+    """Genera la narrativa para el Top N, construye el JSON con embudo y auditoría Jev y lo guarda."""
+    print(f"\n✍️ [3/3] Generando Adaptación Editorial 30X y Embudo de Decisiones (Top {top_n})...")
+    from pipeline.scoring import partition_topics_funnel
+    top, observacion_topics, descartados_topics = partition_topics_funnel(scored_topics, top_n=top_n)
+
+    # Enriquecimiento con Scraper Híbrido (Capa 0 Jina $0 -> Capa 1 Stealth $0 -> Capa 2 ZenRows)
+    print(f"\n🕸️ [Scraper Híbrido] Extrayendo contenido web profundo para los {len(top)} temas del Top...")
+    from pipeline.scraper import HybridScraper
+    scraper = HybridScraper(enable_jitter=False)
 
     top_temas_data = []
     for i, st in enumerate(top, 1):
-        por_que, por_que_audiencia, adaptacion = generate_narrative(st.cluster, st.decision)
+        # Localizar la mejor URL de evidencia (descartando enlaces internos o inválidos)
+        primary_url = ""
+        for u in st.cluster.urls_evidencia(3):
+            if u and u.startswith(("http://", "https://")) and "radar30x.internal" not in u:
+                primary_url = u
+                break
+
+        contenido_profundo = None
+        context_text = None
+
+        if primary_url:
+            try:
+                print(f"  [{i}/{len(top)}] Raspando evidencia: {primary_url[:55]}...")
+                scrape_res = scraper.scrape(primary_url, mode="auto", timeout=12.0)
+                if scrape_res.status == "success" and (scrape_res.content_markdown or scrape_res.content_text):
+                    context_text = (scrape_res.content_markdown or scrape_res.content_text)[:1500]
+                    cost = scrape_res.cost_estimate or "$0.00"
+                    tokens = scrape_res.tokens_estimate
+                    method = scrape_res.method_used.upper()
+                    print(f"     ✅ [{method}] {scrape_res.title[:45]} ({tokens} tokens, coste: {cost})")
+                    contenido_profundo = {
+                        "url": primary_url,
+                        "metodo": scrape_res.method_used,
+                        "titulo": scrape_res.title,
+                        "tokens_estimados": tokens,
+                        "costo_estimado": cost,
+                        "resumen_markdown": (scrape_res.content_markdown or scrape_res.content_text)[:800],
+                        "autor": scrape_res.author or "",
+                    }
+                else:
+                    print(f"     ⚠️ [{scrape_res.method_used}] Extracción parcial: {scrape_res.error_message or 'Sin texto principal'}")
+            except Exception as scrape_err:
+                print(f"     ⚠️ Error raspando {primary_url[:35]}: {scrape_err}")
+
+        por_que, por_que_audiencia, adaptacion = generate_narrative(
+            st.cluster,
+            st.decision,
+            context_text=context_text,
+        )
         st.por_que = por_que
         st.por_que_audiencia = por_que_audiencia
         st.adaptacion_30x = adaptacion
+
+        proceso_decision = None
+        if st.decision.audit:
+            proceso_decision = {
+                "veredicto": st.decision.audit.veredicto,
+                "motivo_veredicto": st.decision.audit.motivo_veredicto,
+                "palabras_clave_detectadas": st.decision.audit.palabras_clave_detectadas,
+                "desglose_formula": st.decision.audit.desglose_formula,
+                "preguntas": [q.model_dump() for q in st.decision.audit.preguntas],
+            }
 
         top_temas_data.append(
             {
@@ -204,18 +264,55 @@ def build_and_save_report(
                 "por_que_audiencia": st.por_que_audiencia,
                 "adaptacion_30x": st.adaptacion_30x,
                 "evidencia": st.cluster.urls_evidencia(3),
+                "contenido_profundo": contenido_profundo,
+                "proceso_decision": proceso_decision,
             }
         )
+
+    # Preparar listas del embudo de descarte y observación
+    descartados_data = []
+    for st in descartados_topics[:40]:
+        motivo = st.decision.audit.motivo_veredicto if st.decision.audit else "Descartado por bajo score de tracción"
+        descartados_data.append({
+            "tema": st.cluster.tema_canonico,
+            "fuentes": st.cluster.fuentes,
+            "score": st.score,
+            "motivo": motivo,
+            "veredicto": "DESCARTADO",
+        })
+
+    observacion_data = []
+    for st in observacion_topics[:30]:
+        motivo = st.decision.audit.motivo_veredicto if st.decision.audit else "En observación: acumulando tracción"
+        observacion_data.append({
+            "tema": st.cluster.tema_canonico,
+            "fuentes": st.cluster.fuentes,
+            "score": st.score,
+            "crecimiento": st.crecimiento_label,
+            "motivo": motivo,
+            "veredicto": "EN_OBSERVACION",
+            "evidencia": st.cluster.urls_evidencia(3),
+        })
 
     now = datetime.now(timezone.utc)
     week_str = f"{now.year}-W{now.isocalendar().week:02d}"
     report_id = f"report_{week_str}"
 
+    embudo_metricas = {
+        "total_evaluados": len(scored_topics),
+        "aprobados_top": len(top_temas_data),
+        "en_observacion": len(observacion_topics),
+        "descartados": len(descartados_topics),
+    }
+
     payload = {
         "semana": week_str,
         "generado": now.isoformat(),
         "total_clusters_evaluados": len(scored_topics),
+        "embudo_metricas": embudo_metricas,
         "top_temas": top_temas_data,
+        "temas_en_observacion": observacion_data,
+        "temas_descartados": descartados_data,
     }
 
     os.makedirs(output_dir, exist_ok=True)
@@ -324,10 +421,55 @@ def main() -> None:
     # Demo
     subparsers.add_parser("demo", help="Mostrar reporte precalculado para pitch a prueba de fallos")
 
+    # Cycle (Multi-agent 12h loop)
+    subparsers.add_parser("cycle", help="Ejecutar ciclo de 12h con agentes (Explorador -> Historiador -> Crítico)")
+
+    # Backfill (90-day cold start solution)
+    backfill_parser = subparsers.add_parser("backfill", help="Poblar memoria histórica de 90 días para el Historiador")
+    backfill_parser.add_argument("--days", type=int, default=90, help="Días de historial a poblar (default: 90)")
+
     # Serve
     serve_parser = subparsers.add_parser("serve", help="Iniciar servidor web con panel interactivo")
     serve_parser.add_argument("--port", type=int, default=8080, help="Puerto del servidor web (default: 8080)")
     serve_parser.add_argument("--host", type=str, default="0.0.0.0", help="Host del servidor (default: 0.0.0.0)")
+
+    # Ask (Chatbot RAG)
+    ask_parser = subparsers.add_parser("ask", help="Consultar al Chatbot RAG sobre tendencias, ganchos o saturación")
+    ask_parser.add_argument("pregunta", type=str, help="Pregunta en lenguaje natural")
+    ask_parser.add_argument("--show-sources", action="store_true", help="Mostrar fuentes y evidencias detalladas")
+    ask_parser.add_argument("--force-level", type=str, choices=["T0", "T1", "T2"], help="Forzar nivel de ejecución")
+    ask_parser.add_argument("--no-cache", action="store_true", help="Ignorar respuestas en caché")
+
+    # Draft (Gestor de borradores)
+    draft_parser = subparsers.add_parser("draft", help="Gestión de borradores editoriales a partir de narrativas")
+    draft_sub = draft_parser.add_subparsers(dest="draft_action", help="Acción sobre borradores")
+
+    # draft list
+    list_draft_p = draft_sub.add_parser("list", help="Listar borradores")
+    list_draft_p.add_argument("--estado", type=str, choices=["idea", "borrador", "en_revision", "aprobado", "publicado", "descartado"])
+
+    # draft new
+    new_draft_p = draft_sub.add_parser("new", help="Crear nuevo borrador")
+    new_draft_p.add_argument("--narrative", type=str, help="ID de narrativa o posición en el Top")
+    new_draft_p.add_argument("--titulo", type=str, help="Título editorial del borrador")
+    new_draft_p.add_argument("--formato", type=str, default="video_corto", help="Formato (video_corto, carrusel, hilo, articulo)")
+    new_draft_p.add_argument("--gancho", type=str, default="opinion", help="Gancho psicológico")
+
+    # draft status
+    status_draft_p = draft_sub.add_parser("status", help="Actualizar estado de un borrador")
+    status_draft_p.add_argument("draft_id", type=int, help="ID del borrador")
+    status_draft_p.add_argument("nuevo_estado", type=str, help="Nuevo estado (borrador, en_revision, aprobado, publicado, descartado)")
+
+    # draft show
+    show_draft_p = draft_sub.add_parser("show", help="Ver contenido de un borrador")
+    show_draft_p.add_argument("draft_id", type=int, help="ID del borrador")
+
+    # draft diff
+    diff_draft_p = draft_sub.add_parser("diff", help="Ver diff Git de un borrador")
+    diff_draft_p.add_argument("draft_id", type=int, help="ID del borrador")
+
+    # Cards (Materialización de tarjetas de narrativa)
+    subparsers.add_parser("cards", help="Materializar tarjetas de narrativa para RAG en SQLite")
 
     args = parser.parse_args()
     if not args.command:
@@ -345,7 +487,92 @@ def main() -> None:
 
     db = Database()
 
-    if args.command == "ingest":
+    if args.command == "ask":
+        from chat.service import ChatService
+        service = ChatService(db=db)
+        res = service.ask(
+            pregunta=args.pregunta,
+            no_cache=args.no_cache,
+            force_level=args.force_level,
+            show_sources=args.show_sources,
+        )
+        print(f"\n{res['respuesta']}")
+        meta_info = f"\n[Nivel: {res['nivel']} | Intención: {res['intencion']} | Confianza: {int(res['confianza']*100)}% | Latencia: {res['latencia_ms']} ms"
+        if res.get("desde_cache"):
+            meta_info += " (desde caché)"
+        meta_info += "]"
+        print(meta_info)
+
+        if args.show_sources and res.get("fuentes"):
+            print("\n📚 Fuentes y Evidencias Verificadas:")
+            for s in res["fuentes"]:
+                print(f"  - {s}")
+    elif args.command == "draft":
+        from drafts.manager import DraftManager
+        dm = DraftManager(db=db)
+        action = getattr(args, "draft_action", None)
+        if not action or action == "list":
+            estado = getattr(args, "estado", None)
+            drafts = dm.list_drafts(estado=estado)
+            print(f"\n📝 Borradores Editoriales ({len(drafts)} encontrados):\n")
+            if not drafts:
+                print("  No hay borradores registrados. Cree uno con 'python run.py draft new --narrative <id>'.")
+            else:
+                for d in drafts:
+                    print(f"  #{d['id']} [{d['estado'].upper()}] {d['titulo']} (Formato: {d['formato']}, Gancho: {d['gancho']})")
+                    print(f"     Path: {d['path']}")
+        elif action == "new":
+            res = dm.create_draft(
+                narrative_id=args.narrative,
+                titulo=args.titulo,
+                formato=args.formato,
+                gancho=args.gancho,
+            )
+            print(f"\n✨ Borrador #{res['id']} creado con éxito en estado '{res['estado']}':")
+            print(f"  Título: {res['titulo']}")
+            print(f"  Archivo: {res['path']}")
+        elif action == "status":
+            try:
+                res = dm.update_status(args.draft_id, args.nuevo_estado)
+                print(f"\n✅ Borrador #{res['id']} actualizado:")
+                print(f"  Estado: {res['estado_anterior']} -> {res['nuevo_estado']}")
+                print(f"  Archivo: {res['path']}")
+            except ValueError as ex:
+                print(f"\n❌ Error al actualizar estado: {ex}")
+        elif action == "show":
+            res = dm.get_draft(args.draft_id)
+            if not res:
+                print(f"\n❌ Borrador #{args.draft_id} no encontrado.")
+            else:
+                print(f"\n--- BORRADOR #{res['id']}: {res['titulo']} ---")
+                print(res.get("content", ""))
+        elif action == "diff":
+            diff_text = dm.get_diff(args.draft_id)
+            print(f"\n--- DIFF HISTÓRICO BORRADOR #{args.draft_id} ---")
+            print(diff_text)
+    elif args.command == "cards":
+        from pipeline.cards import materialize_all_narrative_cards
+        n = materialize_all_narrative_cards(db=db)
+        print(f"\n✨ {n} tarjetas de narrativa materializadas exitosamente en SQLite.")
+    elif args.command == "cycle":
+        from orchestrator import Orchestrator
+        orch = Orchestrator(db=db)
+        res = orch.run_cycle()
+        if res.get("ok"):
+            print(f"\n✨ Ciclo multi-agente completado con éxito (run_id: {res['run_id']}).")
+            print(f"Reporte generado en: {res['report_file']}")
+        else:
+            print(f"\n❌ Error en ciclo multi-agente: {res.get('error')}")
+    elif args.command == "backfill":
+        from orchestrator import Orchestrator
+        orch = Orchestrator(db=db)
+        res = orch.run_backfill(days=args.days)
+        if res.get("ok"):
+            print(f"\n✨ Backfill de {args.days} días completado con éxito (run_id: {res['run_id']}).")
+            print(f"Ítems únicos indexados en memoria: {res['stats']['unicos_guardados']}.")
+        else:
+            print(f"\n❌ Error en backfill: {res.get('error')}")
+    elif args.command == "ingest":
         run_ingest(db)
     elif args.command == "score":
         scored = run_score(db)

@@ -23,6 +23,7 @@ class ScoredTopic:
         self.cluster = cluster
         self.decision = decision
         self.score = score
+        self.score_final = score
         self.crecimiento_label = crecimiento_label
         self.por_que: str = ""
         self.por_que_audiencia: str = ""
@@ -88,6 +89,20 @@ def calculate_topic_score(cluster: TopicCluster, decision: ClusterDecision) -> T
     raw_weighted = (base_signal * conf_factor * synergy_multiplier * impact_multiplier) - saturacion_penalidad
 
     final_score = round(max(raw_weighted, 0.01), 3)
+
+    if decision.audit:
+        decision.audit.desglose_formula = {
+            "crecimiento_norm": round(crecimiento_norm, 3),
+            "novedad": round(decision.novedad, 3),
+            "multifuente_norm": round(multifuente_norm, 3),
+            "encaje_audiencia": round(decision.encaje_audiencia, 3),
+            "factor_confianza": round(conf_factor, 3),
+            "multiplicador_sinergia": round(synergy_multiplier, 2),
+            "multiplicador_impacto": round(impact_multiplier, 2),
+            "penalidad_saturacion": round(saturacion_penalidad, 2),
+            "score_final": final_score,
+        }
+
     return final_score, crecimiento_label
 
 
@@ -112,3 +127,32 @@ def rank_topics(
     # Ordenar por score descendente
     scored.sort(key=lambda t: t.score, reverse=True)
     return scored
+
+
+def partition_topics_funnel(
+    scored_topics: List[ScoredTopic], top_n: int = 10
+) -> Tuple[List[ScoredTopic], List[ScoredTopic], List[ScoredTopic]]:
+    """Particiona los clusters evaluados en el embudo de decisiones:
+    Retorna: (aprobados_top, en_observacion, descartados).
+    """
+    aprobados_candidatos: List[ScoredTopic] = []
+    en_observacion: List[ScoredTopic] = []
+    descartados: List[ScoredTopic] = []
+
+    for st in scored_topics:
+        audit = st.decision.audit
+        veredicto = audit.veredicto if audit else "APROBADO"
+
+        if veredicto == "DESCARTADO":
+            descartados.append(st)
+        elif veredicto == "EN_OBSERVACION":
+            en_observacion.append(st)
+        else:
+            aprobados_candidatos.append(st)
+
+    aprobados_top = aprobados_candidatos[:top_n]
+    # Los aprobados restantes pasan al backlog de observación
+    en_observacion.extend(aprobados_candidatos[top_n:])
+
+    return aprobados_top, en_observacion, descartados
+

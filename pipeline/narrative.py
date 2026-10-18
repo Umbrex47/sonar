@@ -12,7 +12,10 @@ import json
 import logging
 import os
 from typing import Dict, Optional, Tuple
+from dotenv import load_dotenv
 import httpx
+
+load_dotenv()
 
 from pipeline.decide import ClusterDecision
 from pipeline.topics import TopicCluster
@@ -184,6 +187,24 @@ def _generate_narrative_template(cluster: TopicCluster, decision: ClusterDecisio
     return por_que, por_que_audiencia, adaptacion
 
 
+def _normalize_narrative_field(val: Any) -> str:
+    """Normaliza un campo devuelto por el LLM a texto plano seguro si viene como diccionario u objeto."""
+    if val is None:
+        return ""
+    if isinstance(val, str):
+        return val.strip()
+    if isinstance(val, dict):
+        parts = []
+        if val.get("formato_sugerido"):
+            parts.append(f"Formato sugerido: {val['formato_sugerido']}")
+        if val.get("titular_gancho"):
+            parts.append(f"Titular gancho: \"{val['titular_gancho']}\"")
+        if parts:
+            return " — ".join(parts)
+        return " ".join(f"{k}: {v}" for k, v in val.items() if v)
+    return str(val).strip()
+
+
 def _call_openai_compatible(
     cluster: TopicCluster,
     decision: ClusterDecision,
@@ -205,7 +226,7 @@ Métricas y señales: {cluster.metricas_agregadas}
 NO cambies las decisiones de Jev. Redacta únicamente tres campos en JSON:
 - "por_que": Explicación concisa (1 oración) de por qué este contenido está funcionando en redes/medios.
 - "por_que_audiencia": Explicación clara (1-2 oraciones) de por qué esta tendencia coincide directamente con el perfil y prioridades de la audiencia de líderes, CEOs y directores de tecnología/operaciones en Latinoamérica (ahorro de costos, mitigación de riesgos de API, productividad o ROI en < 90 días).
-- "adaptacion_30x": Recomendación concreta de adaptación editorial para 30X (especificando formato sugerido y titular de gancho).
+- "adaptacion_30x": Recomendación concreta de adaptación editorial para 30X (especificando formato sugerido y titular de gancho como texto).
 
 Responde exclusivamente con un JSON válido con estas tres claves.
 """
@@ -229,23 +250,91 @@ Responde exclusivamente con un JSON válido con estas tres claves.
                 content = data["choices"][0]["message"]["content"]
                 parsed = json.loads(content)
                 return (
-                    parsed.get("por_que", ""),
-                    parsed.get("por_que_audiencia", _generate_audience_fit_reason(cluster, decision)),
-                    parsed.get("adaptacion_30x", ""),
+                    _normalize_narrative_field(parsed.get("por_que", "")),
+                    _normalize_narrative_field(parsed.get("por_que_audiencia", _generate_audience_fit_reason(cluster, decision))),
+                    _normalize_narrative_field(parsed.get("adaptacion_30x", "")),
                 )
     except Exception as exc:
         logger.warning("Fallo al llamar LLM de redacción: %s", exc)
     return None
 
 
-def generate_narrative(cluster: TopicCluster, decision: ClusterDecision) -> Tuple[str, str, str]:
+def _call_gemini(
+    cluster: TopicCluster,
+    decision: ClusterDecision,
+    api_key: str,
+    model: str = "gemini-2.5-flash",
+    context_text: Optional[str] = None,
+) -> Optional[Tuple[str, str, str]]:
+    """Llama a Gemini con response_mime_type application/json para redactar por qué, encaje y adaptación."""
+    ctx_block = f"\nExtracto profundo del artículo/fuente oficial:\n{context_text[:1200]}\n" if context_text else ""
+    prompt = f"""Eres el editor senior de 30X, medio líder de educación en Inteligencia Artificial para directivos y equipos en Latinoamérica.
+Jev (TypeSafe System One) ya ha tomado de forma definitiva las siguientes decisiones estructuradas sobre una tendencia:
+
+Tema: {cluster.tema_canonico}
+Fase: {decision.fase}
+Gancho narrativo: {decision.gancho}
+Formato óptimo: {decision.formato}
+Nivel de encaje con líderes LatAm: {decision.encaje_audiencia:.2f}
+Métricas y señales: {cluster.metricas_agregadas}
+{ctx_block}
+NO cambies las decisiones de Jev. Redacta únicamente tres campos en JSON:
+- "por_que": Explicación concisa (1 oración) de por qué este contenido está funcionando en redes/medios.
+- "por_que_audiencia": Explicación clara (1-2 oraciones) de por qué esta tendencia coincide directamente con el perfil y prioridades de la audiencia de líderes, CEOs y directores de tecnología/operaciones en Latinoamérica (ahorro de costos, mitigación de riesgos de API, productividad o ROI en < 90 días).
+- "adaptacion_30x": Recomendación concreta de adaptación editorial para 30X (especificando formato sugerido y titular de gancho).
+
+Responde exclusivamente con un JSON válido con estas tres claves.
+"""
+    gemini_model = "gemini-2.5-flash" if "gemini" in model else model
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}"
+    try:
+        with httpx.Client(timeout=25.0, trust_env=False) as client:
+            resp = client.post(
+                url,
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"response_mime_type": "application/json", "temperature": 0.35},
+                },
+            )
+            if resp.status_code == 200:
+                cand = resp.json().get("candidates", [])
+                if cand:
+                    raw_text = cand[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    parsed = json.loads(raw_text)
+                    return (
+                        _normalize_narrative_field(parsed.get("por_que", "")),
+                        _normalize_narrative_field(parsed.get("por_que_audiencia", _generate_audience_fit_reason(cluster, decision))),
+                        _normalize_narrative_field(parsed.get("adaptacion_30x", "")),
+                    )
+    except Exception as exc:
+        logger.warning("Fallo al llamar Gemini para narrativa: %s", exc)
+    return None
+
+
+def generate_narrative(
+    cluster: TopicCluster,
+    decision: ClusterDecision,
+    context_text: Optional[str] = None,
+) -> Tuple[str, str, str]:
     """Genera la narrativa editorial ('por_que', 'por_que_audiencia' y 'adaptacion_30x') para un tema destacado.
 
-    Utiliza el LLM configurado (OpenAI, DeepSeek, etc.) o el motor editorial de plantilla determinista.
+    Utiliza el LLM configurado (Gemini, OpenAI, DeepSeek, etc.) o el motor editorial de plantilla determinista.
     """
     provider = os.getenv("LLM_PROVIDER", "").lower()
-    api_key = os.getenv("LLM_API_KEY", "").strip()
-    model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    api_key = os.getenv("LLM_API_KEY", "").strip() or os.getenv("GEMINI_API_KEY", "").strip()
+    model = os.getenv("LLM_MODEL", "gemini-2.5-flash")
+
+    template_p, template_a, template_ad = _generate_narrative_template(cluster, decision)
+
+    if api_key and (provider == "gemini" or api_key.startswith("AIzaSy")):
+        res = _call_gemini(cluster, decision, api_key, model, context_text=context_text)
+        if res:
+            p, a, ad = res
+            return (
+                p if p else template_p,
+                a if a else template_a,
+                ad if ad else template_ad,
+            )
 
     if api_key and provider in ("openai", "deepseek", "groq"):
         base_urls = {
@@ -256,7 +345,12 @@ def generate_narrative(cluster: TopicCluster, decision: ClusterDecision) -> Tupl
         base_url = base_urls.get(provider, "https://api.openai.com/v1")
         res = _call_openai_compatible(cluster, decision, api_key, base_url, model)
         if res:
-            return res
+            p, a, ad = res
+            return (
+                p if p else template_p,
+                a if a else template_a,
+                ad if ad else template_ad,
+            )
 
     # Fallback editorial determinista de alta calidad
-    return _generate_narrative_template(cluster, decision)
+    return (template_p, template_a, template_ad)

@@ -40,6 +40,7 @@ data/*.sqlite
 # Output artifacts
 out/report_*.json
 !out/report_sample.json
+drafts/*/*.md
 
 # IDE & OS
 .idea/

@@ -39,55 +39,67 @@ class TopicCluster(BaseModel):
 
 
 def clean_topic_phrase(title: str, summary: str = "") -> str:
-    """Extrae la frase-tema canónica identificando conceptos de tendencia de IA en 2026."""
-    text = f"{title} {summary}".lower()
+    """Extrae y normaliza de forma dinámica la frase-tema representativa de un ítem,
+    eliminando ruido, prefijos y sufijos de canales, pero preservando la especificidad del tema."""
+    if not title:
+        return "Tendencia de IA Emergente"
 
-    # Mapeo a conceptos canónicos clave de tendencias de IA en 2026
-    if any(k in text for k in ["rpa", "workflow", "operations", "operacion", "conciliaci", "prospecc"]) and any(k in text for k in ["agent", "agente", "ia", "ai", "automatiz"]):
-        return "Agentes Autónomos en Operaciones y Reemplazo de RPA"
+    text = title.strip()
 
-    if any(k in text for k in ["sandbox", "airlock", "jailbreak", "guardrail", "netlumi", "agent37", "vulnerab"]) and any(k in text for k in ["agent", "agente", "ia", "ai", "security", "seguridad"]):
-        return "Sandboxing, Seguridad y Trazabilidad de Agentes de IA"
+    # 1. Eliminar etiquetas entre corchetes, paréntesis comunes o hashtags
+    text = re.sub(r"\[.*?\]|\(.*?\)|#\w+", "", text)
 
-    if any(k in text for k in ["claude code", "codex", "merlin", "coding agent", "shadowclone", "cursor", "replit", "rdst"]):
-        return "Coding Agents y Automatización del Desarrollo de Software"
+    # 2. Eliminar prefijos de publicación o agregadores comunes
+    text = re.sub(
+        r"^(Show HN:|Ask HN:|Herramienta:|HN:|Notice:|Breaking:|Video:|Podcast:|Tutorial:|Guía:|Exclusiva:|URGENTE:)\s*",
+        "",
+        text,
+        flags=re.I,
+    )
 
-    if any(k in text for k in ["qwen", "deepseek", "slm", "small language", "open-source", "open-weight", "nemotron", "sam3", "drama-3", "embeddinggemma"]):
-        return "Modelos de Razonamiento Open Source y SLMs Especializados"
+    # 3. Eliminar sufijos típicos de canales de YouTube, medios o plataformas
+    text = re.sub(
+        r"\s*(\||\-)\s*(YouTube|DotCSV|Fireship|Matt Wolfe|Lex Fridman|TechCrunch|The Verge|El Economista|Infobae|Forbes|X|Medium|GitHub|Reddit|HN).*$",
+        "",
+        text,
+        flags=re.I,
+    )
 
-    if any(k in text for k in ["empleo", "mexicanas", "méxico", 'mexico', "colombia", "chile", "latam", "bradesco", "talento"]) and any(k in text for k in ["empresa", "adopción", "adopcion", "ia", "inteligencia artificial"]):
-        return "Adopción Corporativa de IA y Transformación Laboral en LatAm"
+    # 4. Eliminar clickbait / frases vacías iniciales
+    text = re.sub(
+        r"^(Por qué|Why|Cómo|How to|Here is why|The truth about|Todo sobre|Lo que nadie te dice de)\s+",
+        "",
+        text,
+        flags=re.I,
+    )
 
-    if any(k in text for k in ["compliance", "auditor", "regulac", "sesgo", "normativ"]) and any(k in text for k in ["ia", "ai", "legal", "rrhh", "recursos humanos"]):
-        return "Gobernanza, Compliance y Auditoría de IA en Empresas"
+    # 5. Normalizar entidades tecnológicas muy específicas reconocidas (sin absorber temas generales)
+    t_lower = f"{text} {summary}".lower()
+    if "claude code" in t_lower:
+        return "Claude Code y Automatización del Software"
+    if "graphrag" in t_lower or "graph rag" in t_lower:
+        return "GraphRAG y Grafos de Conocimiento Empresarial"
+    if "deepseek-r1" in t_lower or "deepseek r1" in t_lower:
+        return "DeepSeek-R1 y Modelos de Razonamiento Open Source"
+    if any(k in t_lower for k in ["webrtc", "voice agent", "agente de voz"]) and any(k in t_lower for k in ["ia", "ai", "realtime", "tiempo real"]):
+        return "Agentes de Voz en Tiempo Real y Latencia Ultrabaja"
+    if any(k in t_lower for k in ["sandbox", "airlock", "guardrail"]) and any(k in t_lower for k in ["agent", "agente"]):
+        return "Sandboxing, Seguridad y Aislamiento de Agentes"
 
-    # Polémicas de Labs: Anthropic, OpenAI, despidos de seguridad, demandas, rupturas
-    if any(k in text for k in ["anthropic", "openai", "sam altman", "dario amodei", "fired safety", "whistleblower", "lawsuit", "demandas", "copyright", "ruptura"]) and any(k in text for k in ["ai", "ia", "safety", "seguridad", "replit", "controversia", "polémica", "polemica"]):
-        return "Polémicas y Gobernanza de Grandes Labs (OpenAI / Anthropic)"
+    # 6. Limpieza de puntuación y espacios residuales
+    text = re.sub(r"^[–—:\-\s]+|[–—:\-\s]+$", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
 
-    # Benchmarks & Model Race
-    if any(k in text for k in ["benchmark", "swe-bench", "evals", "evaluaci", "reasoning benchmark", "o3", "deepseek v3", "math benchmark"]) and any(k in text for k in ["ai", "ia", "model", "modelo", "score", "rendimiento", "inferencia"]):
-        return "Benchmarks y Carrera de Modelos de Razonamiento (o3 vs Claude vs DeepSeek)"
+    # Si quedó muy corto o vacío, volver al título original sin tags
+    if len(text) < 8:
+        clean_raw = re.sub(r"[\[\]#]", "", title).strip()
+        return clean_raw if len(clean_raw) >= 5 else title.strip()
 
-    # Desarrollo Personal como CEO & Liderazgo Tecnológico
-    if any(k in text for k in ["ceo", "liderazgo", "leadership", "founder", "directivo", "director"]) and any(k in text for k in ["desarrollo personal", "productividad", "toma de decisiones", "cultura", "mental model", "gestión", "gestion", "mindset"]):
-        return "Desarrollo Personal de CEO y Liderazgo Estratégico con IA"
+    # Normalizar capitalización si está todo en mayúsculas
+    if text.isupper():
+        text = text.title()
 
-    # Oportunidades de Negocio y ROI
-    if any(k in text for k in ["roi", "retorno de inversión", "retorno de inversion", "oportunidades", "oportunidad", "monetizaci", "reducción de costos", "reduccion de costos"]) and any(k in text for k in ["empresa", "negocio", "ia", "ai", "banca", "fintech"]):
-        return "Oportunidades de Negocio y Retorno de Inversión (ROI) en IA"
-
-    if any(k in text for k in ["memoria", "memory", "persist", "vector", "local ai", "base local"]) and any(k in text for k in ["agent", "agente", "ia"]):
-        return "Agentes de IA con Memoria Persistente y Bases Locales"
-
-    if any(k in text for k in ["pika", "video studio", "generative video", "watermelon", "audio visual", "musica ia"]):
-        return "Generación Multimodal y Agentes Audiovisuales"
-
-    # Limpieza estándar si es un tema nuevo o especializado
-    cleaned = re.sub(r"\[.*?\]|\(.*?\)|#\w+", "", title)
-    cleaned = re.sub(r"^(Show HN:|Ask HN:|Herramienta:|HN:|Notice:)\s*", "", cleaned, flags=re.I)
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    return cleaned if len(cleaned) > 8 else title.strip()
+    return text
 
 
 def cluster_items(

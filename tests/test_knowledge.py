@@ -126,3 +126,166 @@ def test_ingest_knowledge_resource_end_to_end():
     finally:
         if os.path.exists(temp_db):
             os.remove(temp_db)
+
+
+def test_ingest_image_with_keywords_mode():
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
+        temp_db = tf.name
+
+    try:
+        store = VectorStore(db_path=temp_db)
+        fake_base64_png = (
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        )
+
+        source, profile = ingest_knowledge_resource(
+            url_o_path="infografia_benchmarks_deepseek_anthropic.png",
+            solicitud_usuario="Extraer palabras clave sobre benchmarks de razonamiento y modelos de IA",
+            tipo="image",
+            modo="keywords",
+            titulo="Comparativa Benchmarks DeepSeek R1 vs Claude 3.5 Sonnet",
+            image_data=fake_base64_png,
+            vector_store=store,
+        )
+
+        assert source.tipo == "image"
+        assert source.modo_extraccion == "keywords"
+        assert source.imagen_preview == fake_base64_png
+        assert profile.modo_extraccion == "keywords"
+        assert len(profile.palabras_clave) > 0
+        assert any(k.lower() in ["benchmarks", "razonamiento", "modelos", "ia", "deepseek r1", "claude 3.5 sonnet"] for k in profile.palabras_clave)
+        assert len(profile.entidades_detectadas) > 0
+        assert len(profile.enfoques_radar_sugeridos) > 0
+
+        # Verificar que los chunks vectoriales indexaron las keywords
+        hits = store.search_similar("benchmarks razonamiento modelos", top_k=3)
+        assert len(hits) > 0
+        assert hits[0]["source_id"] == source.id
+        tags = hits[0].get("tags", [])
+        assert "keywords" in tags or "multimodal" in tags
+
+    finally:
+        if os.path.exists(temp_db):
+            os.remove(temp_db)
+
+
+def test_ingest_image_with_ganchos_mode():
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
+        temp_db = tf.name
+
+    try:
+        store = VectorStore(db_path=temp_db)
+        fake_base64_png = (
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        )
+
+        source, profile = ingest_knowledge_resource(
+            url_o_path="thumbnail_viral_open_ai.png",
+            solicitud_usuario="Extraer ganchos psicológicos de controversia corporativa",
+            tipo="image",
+            modo="ganchos",
+            titulo="Miniatura de YouTube: Por qué renunciaron los líderes de OpenAI",
+            image_data=fake_base64_png,
+            vector_store=store,
+        )
+
+        assert source.tipo == "image"
+        assert source.modo_extraccion == "ganchos"
+        assert profile.hook is not None
+        assert profile.hook.plantilla_reutilizable != ""
+        assert len(profile.plantillas_30x) > 0
+
+    finally:
+        if os.path.exists(temp_db):
+            os.remove(temp_db)
+
+
+def test_ingest_image_pool_multi_images():
+    """Verifica que un pool de múltiples imágenes se registre con tipo 'image_pool' y persista todo el pool."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
+        temp_db = tf.name
+
+    try:
+        store = VectorStore(db_path=temp_db)
+        img1 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        img2 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        img3 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPj/HwADBwIAMCbHYQAAAABJRU5ErkJggg=="
+
+        pool = [img1, img2, img3]
+        filenames = ["grafico_mercado_q1.png", "benchmark_rendimiento.jpg", "dashboard_retencion.png"]
+
+        source, profile = ingest_knowledge_resource(
+            url_o_path="pool_mercado_q1",
+            solicitud_usuario="Analizar métricas de mercado y benchmarks de IA",
+            tipo="image_pool",
+            modo="completo",
+            images_data=pool,
+            filenames=filenames,
+            vector_store=store,
+        )
+
+        assert source.tipo == "image_pool"
+        assert source.total_imagenes == 3
+        assert len(source.imagenes_pool) == 3
+        assert source.imagen_preview == img1
+        assert "Pool" in source.titulo or "mercado" in source.titulo.lower()
+
+        # Verificar persistencia en base de datos SQLite
+        all_sources = store.get_all_sources()
+        assert len(all_sources) == 1
+        saved = all_sources[0]
+        assert saved.tipo == "image_pool"
+        assert saved.total_imagenes == 3
+        assert len(saved.imagenes_pool) == 3
+        assert saved.imagenes_pool[1] == img2
+
+    finally:
+        if os.path.exists(temp_db):
+            os.remove(temp_db)
+
+
+def test_different_images_produce_distinct_keywords():
+    """Verifica que imágenes con diferentes nombres, focos y contenidos produzcan palabras clave diferenciadas."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
+        temp_db = tf.name
+
+    try:
+        store = VectorStore(db_path=temp_db)
+        img_a = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        img_b = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+
+        src_a, prof_a = ingest_knowledge_resource(
+            url_o_path="kubernetes_docker_microservicios_devops.png",
+            solicitud_usuario="Extraer términos de infraestructura contenedores kubernetes devops",
+            tipo="image",
+            modo="keywords",
+            titulo="Arquitectura de Contenedores Kubernetes y Docker",
+            image_data=img_a,
+            vector_store=store,
+        )
+
+        src_b, prof_b = ingest_knowledge_resource(
+            url_o_path="finanzas_banca_latam_roi_conciliacion.png",
+            solicitud_usuario="Extraer términos de fintech finanzas y banca",
+            tipo="image",
+            modo="keywords",
+            titulo="Conciliación Financiera y Finanzas para Directores",
+            image_data=img_b,
+            vector_store=store,
+        )
+
+        # Las palabras clave de imagen A deben contener términos de infraestructura
+        kw_a = [k.lower() for k in prof_a.palabras_clave + prof_a.entidades_detectadas]
+        # Las palabras clave de imagen B deben contener términos financieros
+        kw_b = [k.lower() for k in prof_b.palabras_clave + prof_b.entidades_detectadas]
+
+        assert any("kubernetes" in k or "docker" in k or "contenedores" in k for k in kw_a)
+        assert any("finanzas" in k or "financiera" in k or "banca" in k or "fintech" in k for k in kw_b)
+
+        # No deben ser listas idénticas
+        assert set(prof_a.palabras_clave) != set(prof_b.palabras_clave)
+
+    finally:
+        if os.path.exists(temp_db):
+            os.remove(temp_db)
+

@@ -6,4 +6,8 @@ pydantic>=2.8.0
 jev>=0.3.0
 rich>=13.7.0
 python-dotenv>=1.0.0
+beautifulsoup4>=4.12.0
+numpy>=2.0.0
+youtube-transcript-api>=1.2.0
 pytest>=8.0.0
+

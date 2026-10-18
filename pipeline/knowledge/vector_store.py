@@ -32,6 +32,8 @@ DEFAULT_DB_PATH = "data/radar.db"
 def _get_db_path(custom_path: Optional[str] = None) -> str:
     if custom_path:
         return custom_path
+    if "RADAR_DB_PATH" in os.environ:
+        return os.environ["RADAR_DB_PATH"]
     base_dir = Path(__file__).resolve().parent.parent.parent
     return str(base_dir / DEFAULT_DB_PATH)
 
@@ -50,7 +52,7 @@ class VectorStore:
         return conn
 
     def init_tables(self) -> None:
-        """Crea las tablas de conocimiento vectorial si no existen."""
+        """Crea las tablas de conocimiento vectorial si no existen y aplica migraciones seguras."""
         with self.get_connection() as conn:
             cur = conn.cursor()
 
@@ -60,7 +62,11 @@ class VectorStore:
                 CREATE TABLE IF NOT EXISTS knowledge_sources (
                     id TEXT PRIMARY KEY,
                     tipo TEXT NOT NULL,
+                    modo_extraccion TEXT DEFAULT 'completo',
                     url_o_path TEXT NOT NULL,
+                    imagen_preview TEXT,
+                    imagenes_pool_json TEXT,
+                    total_imagenes INTEGER DEFAULT 1,
                     titulo TEXT NOT NULL,
                     autor TEXT,
                     duracion_segundos REAL DEFAULT 0.0,
@@ -71,15 +77,21 @@ class VectorStore:
             """
             )
 
-            # 2. Perfiles de estilo y gancho
+            # 2. Perfiles de estilo, ganchos y palabras clave
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS knowledge_profiles (
                     source_id TEXT PRIMARY KEY,
-                    hook_json TEXT NOT NULL,
+                    modo_extraccion TEXT DEFAULT 'completo',
+                    hook_json TEXT,
                     estructura_json TEXT,
                     tono_y_voz TEXT,
                     conceptos_json TEXT,
+                    palabras_clave_json TEXT,
+                    palabras_secundarias_json TEXT,
+                    entidades_json TEXT,
+                    enfoques_radar_json TEXT,
+                    texto_extraido TEXT,
                     plantillas_json TEXT,
                     resumen_ejecutivo TEXT,
                     FOREIGN KEY(source_id) REFERENCES knowledge_sources(id)
@@ -105,6 +117,26 @@ class VectorStore:
             """
             )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_chunks_source ON knowledge_chunks(source_id)")
+
+            # Migraciones no destructivas para bases de datos existentes
+            migrations = [
+                ("knowledge_sources", "modo_extraccion TEXT DEFAULT 'completo'"),
+                ("knowledge_sources", "imagen_preview TEXT"),
+                ("knowledge_sources", "imagenes_pool_json TEXT"),
+                ("knowledge_sources", "total_imagenes INTEGER DEFAULT 1"),
+                ("knowledge_profiles", "modo_extraccion TEXT DEFAULT 'completo'"),
+                ("knowledge_profiles", "palabras_clave_json TEXT"),
+                ("knowledge_profiles", "palabras_secundarias_json TEXT"),
+                ("knowledge_profiles", "entidades_json TEXT"),
+                ("knowledge_profiles", "enfoques_radar_json TEXT"),
+                ("knowledge_profiles", "texto_extraido TEXT"),
+            ]
+            for table, col_def in migrations:
+                try:
+                    cur.execute(f"ALTER TABLE {table} ADD COLUMN {col_def}")
+                except sqlite3.OperationalError:
+                    pass  # Columna ya existe
+
             conn.commit()
 
     @staticmethod
@@ -163,16 +195,21 @@ class VectorStore:
             cur = conn.cursor()
 
             # Insertar fuente
+            imagenes_pool_data = json.dumps(source.imagenes_pool, ensure_ascii=False) if source.imagenes_pool else "[]"
             cur.execute(
                 """
                 INSERT OR REPLACE INTO knowledge_sources
-                (id, tipo, url_o_path, titulo, autor, duracion_segundos, solicitud_usuario, transcripcion_resumen, creado_en)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, tipo, modo_extraccion, url_o_path, imagen_preview, imagenes_pool_json, total_imagenes, titulo, autor, duracion_segundos, solicitud_usuario, transcripcion_resumen, creado_en)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     source.id,
                     source.tipo,
+                    source.modo_extraccion,
                     source.url_o_path,
+                    source.imagen_preview,
+                    imagenes_pool_data,
+                    source.total_imagenes,
                     source.titulo,
                     source.autor,
                     source.duracion_segundos,
@@ -183,18 +220,27 @@ class VectorStore:
             )
 
             # Insertar perfil
+            hook_data = json.dumps(profile.hook.model_dump(), ensure_ascii=False) if profile.hook else "{}"
             cur.execute(
                 """
                 INSERT OR REPLACE INTO knowledge_profiles
-                (source_id, hook_json, estructura_json, tono_y_voz, conceptos_json, plantillas_json, resumen_ejecutivo)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (source_id, modo_extraccion, hook_json, estructura_json, tono_y_voz, conceptos_json,
+                 palabras_clave_json, palabras_secundarias_json, entidades_json, enfoques_radar_json,
+                 texto_extraido, plantillas_json, resumen_ejecutivo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     profile.source_id,
-                    json.dumps(profile.hook.model_dump(), ensure_ascii=False),
+                    profile.modo_extraccion,
+                    hook_data,
                     json.dumps(profile.estructura_narrativa, ensure_ascii=False),
                     profile.tono_y_voz,
                     json.dumps(profile.conceptos_clave, ensure_ascii=False),
+                    json.dumps(profile.palabras_clave, ensure_ascii=False),
+                    json.dumps(profile.palabras_clave_secundarias, ensure_ascii=False),
+                    json.dumps(profile.entidades_detectadas, ensure_ascii=False),
+                    json.dumps(profile.enfoques_radar_sugeridos, ensure_ascii=False),
+                    profile.texto_extraido,
                     json.dumps(profile.plantillas_30x, ensure_ascii=False),
                     profile.resumen_ejecutivo,
                 ),
@@ -222,16 +268,28 @@ class VectorStore:
                     ),
                 )
             conn.commit()
-        logger.info("Guardada fuente '%s' con %d chunks vectoriales.", source.titulo, len(chunks))
+        logger.info("Guardada fuente '%s' (%s) con %d chunks vectoriales.", source.titulo, source.modo_extraccion, len(chunks))
 
     def get_all_sources(self) -> List[KnowledgeSource]:
-        """Obtiene todas las fuentes registradas junto con su perfil de estilo."""
+        """Obtiene todas las fuentes registradas junto con su perfil de estilo y palabras clave."""
         sources: List[KnowledgeSource] = []
         with self.get_connection() as conn:
             cur = conn.cursor()
             cur.execute(
                 """
-                SELECT s.*, p.hook_json, p.estructura_json, p.tono_y_voz, p.conceptos_json, p.plantillas_json, p.resumen_ejecutivo
+                SELECT s.*,
+                       p.modo_extraccion AS p_modo,
+                       p.hook_json,
+                       p.estructura_json,
+                       p.tono_y_voz,
+                       p.conceptos_json,
+                       p.palabras_clave_json,
+                       p.palabras_secundarias_json,
+                       p.entidades_json,
+                       p.enfoques_radar_json,
+                       p.texto_extraido,
+                       p.plantillas_json,
+                       p.resumen_ejecutivo
                 FROM knowledge_sources s
                 LEFT JOIN knowledge_profiles p ON s.id = p.source_id
                 ORDER BY s.creado_en DESC
@@ -239,26 +297,64 @@ class VectorStore:
             )
             for row in cur.fetchall():
                 profile = None
-                if row["hook_json"]:
-                    try:
-                        hook_data = json.loads(row["hook_json"])
-                        profile = KnowledgeProfile(
-                            source_id=row["id"],
-                            hook=HookAnalysis(**hook_data),
-                            estructura_narrativa=json.loads(row["estructura_json"] or "[]"),
-                            tono_y_voz=row["tono_y_voz"] or "",
-                            conceptos_clave=json.loads(row["conceptos_json"] or "[]"),
-                            plantillas_30x=json.loads(row["plantillas_json"] or "[]"),
-                            resumen_ejecutivo=row["resumen_ejecutivo"] or "",
-                        )
-                    except Exception as ex:
-                        logger.warning("Error deserializando perfil para %s: %s", row["id"], ex)
+                keys = row.keys()
+                has_profile = "p_modo" in keys and (
+                    row["p_modo"] is not None
+                    or row["hook_json"] is not None
+                    or row["conceptos_json"] is not None
+                    or (("palabras_clave_json" in keys) and row["palabras_clave_json"] is not None)
+                )
+
+                if has_profile:
+                    hook_obj = None
+                    if row["hook_json"]:
+                        try:
+                            hook_data = json.loads(row["hook_json"])
+                            if hook_data:
+                                hook_obj = HookAnalysis(**hook_data)
+                        except Exception as ex:
+                            logger.warning("Error deserializando hook para %s: %s", row["id"], ex)
+
+                    def _safe_json_list(col_name: str) -> List[Any]:
+                        if col_name in keys and row[col_name]:
+                            try:
+                                return json.loads(row[col_name])
+                            except Exception:
+                                return []
+                        return []
+
+                    profile = KnowledgeProfile(
+                        source_id=row["id"],
+                        modo_extraccion=row["p_modo"] or (row["modo_extraccion"] if "modo_extraccion" in keys else "completo") or "completo",
+                        hook=hook_obj,
+                        estructura_narrativa=_safe_json_list("estructura_json"),
+                        tono_y_voz=row["tono_y_voz"] or "",
+                        conceptos_clave=_safe_json_list("conceptos_json"),
+                        palabras_clave=_safe_json_list("palabras_clave_json"),
+                        palabras_clave_secundarias=_safe_json_list("palabras_secundarias_json"),
+                        entidades_detectadas=_safe_json_list("entidades_json"),
+                        enfoques_radar_sugeridos=_safe_json_list("enfoques_radar_json"),
+                        texto_extraido=row["texto_extraido"] if "texto_extraido" in keys else None,
+                        plantillas_30x=_safe_json_list("plantillas_json"),
+                        resumen_ejecutivo=row["resumen_ejecutivo"] or "",
+                    )
+
+                pool_list = _safe_json_list("imagenes_pool_json")
+                tot_img = (
+                    row["total_imagenes"]
+                    if ("total_imagenes" in keys and row["total_imagenes"])
+                    else (len(pool_list) if pool_list else 1)
+                )
 
                 sources.append(
                     KnowledgeSource(
                         id=row["id"],
                         tipo=row["tipo"],
+                        modo_extraccion=row["modo_extraccion"] if "modo_extraccion" in keys and row["modo_extraccion"] else "completo",
                         url_o_path=row["url_o_path"],
+                        imagen_preview=row["imagen_preview"] if "imagen_preview" in keys else None,
+                        imagenes_pool=pool_list,
+                        total_imagenes=tot_img,
                         titulo=row["titulo"],
                         autor=row["autor"] or "Desconocido",
                         duracion_segundos=row["duracion_segundos"] or 0.0,

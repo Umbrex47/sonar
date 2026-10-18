@@ -1,0 +1,14 @@
+# ==============================================================================
+# Sonar - Configuración Caddy Reverse Proxy para sonar.perte.design
+# ==============================================================================
+# Compatible con Cloudflare (Flexible, Full y Full Strict) y Let's Encrypt automático
+
+http://sonar.perte.design, https://sonar.perte.design {
+    reverse_proxy sonar:8080
+    encode gzip zstd
+}
+
+:80 {
+    reverse_proxy sonar:8080
+    encode gzip zstd
+}

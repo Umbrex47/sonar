@@ -72,46 +72,42 @@ def evaluate_playground_item(
         },
     )
 
-    # 1. Definir las 5 preguntas que se le formulan a Jev
-    preguntas_jev = [
-        {
-            "id": "p1_fase",
-            "pregunta": "¿En qué fase de adopción se encuentra esta tendencia?",
-            "opciones": ["naciendo", "en_crecimiento", "saturado"],
-            "proposito": "Determinar si es una oportunidad emergente temprana o si el mercado ya está saturado de copias.",
-        },
-        {
-            "id": "p2_gancho",
-            "pregunta": "¿Cuál es el gancho psicológico de mayor conversión?",
-            "opciones": ["dato_contraintuitivo", "opinion", "tutorial", "contraste", "historia"],
-            "proposito": "Identificar el mecanismo cognitivo para capturar la atención en los primeros 10 segundos.",
-        },
-        {
-            "id": "p3_formato",
-            "pregunta": "¿Cuál es el formato nativo ideal para distribuirlo?",
-            "opciones": ["video_corto", "carousel", "hilo", "long_form", "articulo"],
-            "proposito": "Recomendar si debe ser un Short/Reel, un Carrusel en LinkedIn o una Masterclass técnica.",
-        },
-        {
-            "id": "p4_novedad",
-            "pregunta": "¿Qué probabilidad existe de que sea una novedad emergente (< 7 días)?",
-            "opciones": ["0.00 a 1.00 (probabilidad calibrada)"],
-            "proposito": "Filtrar refritos o herramientas del año anterior que reviven artificialmente.",
-        },
-        {
-            "id": "p5_encaje",
-            "pregunta": "¿Qué nivel de relevancia tiene para líderes y directores en LatAm?",
-            "opciones": ["0.00 a 1.00 (afinidad de audiencia)"],
-            "proposito": "Evaluar si aborda costos, ROI, operaciones, seguridad o personas en empresas de la región.",
-        },
-    ]
-
-    # 2. Tomar decisión con Jev
+    # 1. Tomar decisión con Jev (con trazabilidad completa)
     decision = decide_cluster(cluster)
     latencia_ms = round((time.perf_counter() - t0) * 1000, 1)
 
-    # 3. Calcular desglose de scoring
+    # 2. Calcular desglose de scoring
     final_score, crecimiento_label = calculate_topic_score(cluster, decision)
+
+    # 3. Mapear las 5 preguntas con las respuestas vivas de JEV
+    propositos = {
+        "q1_fase": "Determinar si es una oportunidad emergente temprana o si el mercado ya está saturado de copias.",
+        "q2_gancho": "Identificar el mecanismo cognitivo para capturar la atención en los primeros 10 segundos.",
+        "q3_formato": "Recomendar si debe ser un Short/Reel, un Carrusel en LinkedIn o una Masterclass técnica.",
+        "q4_novedad": "Filtrar refritos o herramientas del año anterior que reviven artificialmente.",
+        "q5_encaje_latam": "Evaluar si aborda costos, ROI, operaciones, seguridad o personas en empresas de la región.",
+    }
+
+    preguntas_jev = []
+    if decision.audit and decision.audit.preguntas:
+        for q in decision.audit.preguntas:
+            preguntas_jev.append({
+                "id": q.id,
+                "pregunta": q.pregunta,
+                "respuesta": q.respuesta,
+                "score": q.score,
+                "razonamiento": q.razonamiento,
+                "proposito": propositos.get(q.id, "Validar impacto y aplicabilidad para directivos en LatAm."),
+            })
+    else:
+        # Fallback estructurado
+        preguntas_jev = [
+            {"id": "q1_fase", "pregunta": "¿En qué fase de adopción se encuentra?", "respuesta": decision.fase, "score": decision.novedad, "razonamiento": f"Clasificado en fase '{decision.fase}'.", "proposito": propositos["q1_fase"]},
+            {"id": "q2_gancho", "pregunta": "¿Cuál es el gancho psicológico?", "respuesta": decision.gancho, "score": 0.85, "razonamiento": f"Gancho óptimo: {decision.gancho}.", "proposito": propositos["q2_gancho"]},
+            {"id": "q3_formato", "pregunta": "¿Cuál es el formato nativo ideal?", "respuesta": decision.formato, "score": 0.80, "razonamiento": f"Formato: {decision.formato}.", "proposito": propositos["q3_formato"]},
+            {"id": "q4_novedad", "pregunta": "¿Qué probabilidad de novedad emergente existe?", "respuesta": f"{int(decision.novedad * 100)}%", "score": decision.novedad, "razonamiento": "Filtro temporal activo.", "proposito": propositos["q4_novedad"]},
+            {"id": "q5_encaje_latam", "pregunta": "¿Qué nivel de relevancia ejecutiva tiene?", "respuesta": f"{int(decision.encaje_audiencia * 100)}%", "score": decision.encaje_audiencia, "razonamiento": "Afinidad con toma de decisiones.", "proposito": propositos["q5_encaje_latam"]},
+        ]
 
     fuentes_count = len(active_fuentes)
     synergy_multiplier = 1.25 if fuentes_count >= 3 else (1.10 if fuentes_count == 2 else 0.85)
@@ -125,6 +121,10 @@ def evaluate_playground_item(
     impact_multiplier = 0.40 if is_toy else (1.20 if has_enterprise else 1.0)
     conf_factor = 0.45 + (0.55 * decision.confianza)
 
+    veredicto = decision.audit.veredicto if decision.audit else ("DESCARTADO" if final_score < 0.35 else "APROBADO")
+    motivo_veredicto = decision.audit.motivo_veredicto if decision.audit else ""
+    palabras_clave = decision.audit.palabras_clave_detectadas if decision.audit else []
+
     score_breakdown = {
         "score_final": final_score,
         "confianza_jev": decision.confianza,
@@ -136,6 +136,9 @@ def evaluate_playground_item(
         "fase": decision.fase,
         "gancho": decision.gancho,
         "formato": decision.formato,
+        "veredicto": veredicto,
+        "motivo_veredicto": motivo_veredicto,
+        "palabras_clave": palabras_clave,
     }
 
     import os

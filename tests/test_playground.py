@@ -15,6 +15,8 @@ def test_evaluate_playground_item():
     assert isinstance(telemetry, PlaygroundTelemetry)
     assert telemetry.tema == tema
     assert len(telemetry.preguntas_jev) == 5
+    assert "respuesta" in telemetry.preguntas_jev[0]
+    assert len(telemetry.preguntas_jev[0]["razonamiento"]) > 5
     assert telemetry.decision.fase in ["naciendo", "en_crecimiento", "saturado"]
     assert telemetry.decision.gancho in ["dato_contraintuitivo", "opinion", "tutorial", "contraste", "historia"]
     assert telemetry.decision.formato in ["video_corto", "carousel", "hilo", "long_form", "articulo"]
@@ -22,3 +24,5 @@ def test_evaluate_playground_item():
     assert 0.0 <= telemetry.score_final <= 2.0
     assert telemetry.latencia_ms > 0
     assert "score_breakdown" in telemetry.model_dump()
+    assert "veredicto" in telemetry.score_breakdown
+

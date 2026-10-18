@@ -1,7 +1,9 @@
 """Pruebas unitarias para la interfaz web y API de Radar30X."""
 
 import json
+from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer
+from unittest.mock import patch
 import threading
 import httpx
 import pytest
@@ -62,8 +64,11 @@ def test_query_db_items():
         assert "url" in items[0]
 
 
-def test_web_server_endpoints():
+def test_web_server_endpoints(monkeypatch, tmp_path):
     """Inicia un servidor web en un puerto efímero y verifica los endpoints HTTP."""
+    test_db = str(tmp_path / "web_test.db")
+    monkeypatch.setenv("RADAR_DB_PATH", test_db)
+
     server = ThreadingHTTPServer(("127.0.0.1", 0), RadarHTTPHandler)
     port = server.server_address[1]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -71,12 +76,13 @@ def test_web_server_endpoints():
 
     base_url = f"http://127.0.0.1:{port}"
 
+
     try:
         with httpx.Client(base_url=base_url, timeout=5.0, trust_env=False) as client:
             # 1. Dashboard HTML
             res_html = client.get("/")
             assert res_html.status_code == 200
-            assert "Radar de Contenido 30X" in res_html.text
+            assert "Sonar" in res_html.text
 
             # 2. API Reports
             res_rep = client.get("/api/reports")
@@ -160,6 +166,119 @@ def test_web_server_endpoints():
             res_del_knw = client.delete(f"/api/knowledge/{knw_id}")
             assert res_del_knw.status_code == 200
             assert res_del_knw.json()["status"] == "deleted"
+
+            # 14. API RSS.app - List
+            res_rss = client.get("/api/rssapp/feeds")
+            assert res_rss.status_code == 200
+            assert "feeds" in res_rss.json()
+
+            # 15. API RSS.app - Create
+            res_rss_add = client.post("/api/rssapp/feeds", json={
+                "url": "https://rss.app/feeds/test_feed.xml",
+                "nombre": "Test RSS.app Feed",
+                "plataforma": "Twitter/X",
+                "enfoque_id": "polemicas-labs",
+            })
+            assert res_rss_add.status_code == 201
+            rss_feed_id = res_rss_add.json()["feed"]["id"]
+
+            # 16. API RSS.app - Toggle
+            res_rss_tog = client.post(f"/api/rssapp/feeds/{rss_feed_id}/toggle")
+            assert res_rss_tog.status_code == 200
+            assert res_rss_tog.json()["feed"]["activo"] is False
+
+            # 17. API RSS.app - Delete
+            res_rss_del = client.delete(f"/api/rssapp/feeds/{rss_feed_id}")
+            assert res_rss_del.status_code == 200
+            assert res_rss_del.json()["status"] == "deleted"
+
+            # 18. API Chatbot - Ask
+            res_chat = client.post("/api/chat/ask", json={
+                "pregunta": "¿Cuáles son los temas en tendencia?",
+                "show_sources": True,
+            })
+            assert res_chat.status_code == 200
+            chat_data = res_chat.json()
+            assert "respuesta" in chat_data
+            assert chat_data["nivel"] == "T0"
+
+            # 19. API Chatbot - Logs
+            res_logs = client.get("/api/chat/logs")
+            assert res_logs.status_code == 200
+            assert "logs" in res_logs.json()
+
+            # 20. API Drafts - Create
+            res_draft_create = client.post("/api/drafts", json={
+                "titulo": "Borrador API Test",
+                "formato": "video_corto",
+                "gancho": "opinion",
+            })
+            assert res_draft_create.status_code == 201
+            d_id = res_draft_create.json()["id"]
+
+            # 21. API Drafts - List
+            res_draft_list = client.get("/api/drafts")
+            assert res_draft_list.status_code == 200
+            assert any(d["id"] == d_id for d in res_draft_list.json()["drafts"])
+
+            # 22. API Drafts - Detail
+            res_draft_get = client.get(f"/api/drafts/{d_id}")
+            assert res_draft_get.status_code == 200
+            assert res_draft_get.json()["titulo"] == "Borrador API Test"
+
+            # 23. API Drafts - Update Status
+            res_draft_status = client.post(f"/api/drafts/{d_id}/status", json={"estado": "en_revision"})
+            assert res_draft_status.status_code == 200
+            assert res_draft_status.json()["nuevo_estado"] == "en_revision"
+
+            # 24. API Scraper - Status
+            res_scraper_status = client.get("/api/scraper/status")
+            assert res_scraper_status.status_code == 200
+            scraper_data = res_scraper_status.json()
+            assert "motores" in scraper_data
+            assert "jina_reader" in scraper_data["motores"]
+
+            # 25. API Scraper - Extract (SSRF safety check)
+            res_scraper_ssrf = client.post("/api/scraper/extract", json={"url": "http://127.0.0.1/secrets"})
+            assert res_scraper_ssrf.status_code == 200
+            assert res_scraper_ssrf.json()["status"] == "error"
+            assert "seguridad" in res_scraper_ssrf.json()["title"].lower()
+
+            # 26. API WebSearch - GET test
+            from sources.base import RawItem
+            mock_items = [
+                RawItem(
+                    id="mock_ws_1",
+                    fuente="WebSearch",
+                    titulo="OpenAI Enterprise Agent Benchmark",
+                    url="https://openai.com/blog/benchmark",
+                    resumen="Resultados de pruebas con agentes autónomos.",
+                    fecha_publicacion=datetime.now(timezone.utc),
+                    score_relevancia=0.85,
+                    metadatos={"query": "OpenAI"},
+                )
+            ]
+            with patch("sources.websearch.search_web_engine", return_value=mock_items):
+                res_ws_get = client.get("/api/websearch/test?q=OpenAI")
+                assert res_ws_get.status_code == 200
+                assert "results" in res_ws_get.json()
+
+                # 27. API WebSearch - POST query with alias
+                res_ws_post = client.post("/api/websearch/query", json={"q": "OpenAI"})
+                assert res_ws_post.status_code == 200
+                assert "results" in res_ws_post.json()
+
+            # 28. API Playground Eval - with headline
+            res_play = client.post("/api/playground/eval", json={
+                "headline": "DeepSeek R1 benchmarks",
+                "fuentes": ["HackerNews"],
+                "vistas_por_hora": 150.0,
+            })
+            assert res_play.status_code == 200
+            play_data = res_play.json()
+            assert play_data["tema"] == "DeepSeek R1 benchmarks"
+            assert "decision" in play_data
+            assert "score_final" in play_data
     finally:
         server.shutdown()
         server.server_close()

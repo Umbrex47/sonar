@@ -97,6 +97,61 @@ DEFAULT_FOCUSES: List[Dict[str, Any]] = [
         ],
         "activo": True,
     },
+    {
+        "id": "agentes-voz-multimodal",
+        "nombre": "Agentes de Voz en Tiempo Real & Modelos Multimodales",
+        "categoria": "voz_multimodal",
+        "descripcion": "Modelos de voz de latencia ultrabaja (<200ms), WebRTC, GPT-4o Realtime, Gemini Live y generación de video comercial.",
+        "keywords": [
+            "voice agents", "agentes de voz", "WebRTC IA", "GPT-4o Realtime",
+            "Gemini Live", "ElevenLabs", "Sora video", "Kling AI", "generación video IA"
+        ],
+        "activo": True,
+    },
+    {
+        "id": "graphrag-knowledge",
+        "nombre": "GraphRAG & Grafos de Conocimiento Empresarial",
+        "categoria": "graphrag",
+        "descripcion": "Evolución de RAG tradicional hacia grafos de conocimiento estructurados (Neo4j, Microsoft GraphRAG) para eliminar alucinaciones.",
+        "keywords": [
+            "GraphRAG", "knowledge graphs", "grafos conocimiento", "Neo4j IA",
+            "RAG hibrido", "vector graph", "ontologías IA"
+        ],
+        "activo": True,
+    },
+    {
+        "id": "slms-borde-inferencia",
+        "nombre": "Modelos SLM en el Borde & Optimización de Inferencia",
+        "categoria": "slms_borde",
+        "descripcion": "Despliegue de modelos pequeños (1B-8B) en hardware local, cuantización GGUF/AWQ, vLLM y soberanía de datos.",
+        "keywords": [
+            "SLM", "inferencia local", "Ollama", "vLLM", "DeepSeek R1 Distill",
+            "Qwen 2.5", "Phi-4", "cuantización GGUF", "soberanía de datos"
+        ],
+        "activo": True,
+    },
+    {
+        "id": "fintech-fraude-ia",
+        "nombre": "IA en Finanzas, Prevención de Fraude & Core Bancario",
+        "categoria": "fintech_fraude",
+        "descripcion": "Detección de anomalías en transacciones en tiempo real, scoring crediticio aumentado y cumplimiento AML en banca de LatAm.",
+        "keywords": [
+            "prevención de fraude IA", "fintech IA", "scoring crediticio",
+            "banca digital", "análisis de riesgo", "AML compliance", "ciberfraude"
+        ],
+        "activo": True,
+    },
+    {
+        "id": "coding-agents-software",
+        "nombre": "Coding Agents & Automatización del Ciclo de Software",
+        "categoria": "coding_agents",
+        "descripcion": "Herramientas de ingeniería de software autónoma (Claude Code, Cursor, Devin, validación formal) y productividad de desarrolladores.",
+        "keywords": [
+            "Claude Code", "Cursor AI", "coding agent", "SWE-bench",
+            "desarrollo software IA", "agentes programadores", "refactoring autonomo"
+        ],
+        "activo": True,
+    },
 ]
 
 

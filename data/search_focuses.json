@@ -104,7 +104,141 @@
       "auditoría algoritmos",
       "ciberseguridad corporativa"
     ],
-    "activo": false,
+    "activo": true,
     "creado_en": "2026-10-17T09:27:03.399813+00:00"
+  },
+  {
+    "id": "track-extraer",
+    "nombre": "Track: Extraer",
+    "categoria": "conocimiento",
+    "descripcion": "Enfoque temático generado automáticamente desde extracción de conocimiento RAG (Extraer).",
+    "keywords": [
+      "Extraer"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T16:54:51.754793+00:00"
+  },
+  {
+    "id": "track-metodolog-as-de-an-lisis-automatizado-para-elementos-de-retenci-n-en-contenido-visual",
+    "nombre": "Track: Metodologías de análisis automatizado para elementos de retención en contenido visual",
+    "categoria": "radar-sugerido",
+    "descripcion": "Enfoque temático generado automáticamente desde extracción de conocimiento RAG (Metodologías de análisis automatizado para elementos de retención en contenido visual).",
+    "keywords": [
+      "Metodologías de análisis automatizado para elementos de retención en contenido visual"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T17:57:46.015003+00:00"
+  },
+  {
+    "id": "ecosistema-startups-vc-y-tech-en-latam",
+    "nombre": "Ecosistema Startups, VC y Tech en LatAm",
+    "categoria": "polemicas",
+    "descripcion": "Monitorear rondas de inversión, fusiones y adquisiciones (M&A), tendencias de venture capital, expansión de unicornios y adopción de inteligencia artificial en los principales ecosistemas de startups de América Latina (Brasil, México, Colombia, etc.), enfocado en métricas de rentabilidad y eficiencia operativa.",
+    "keywords": [
+      "venture capital",
+      "levantamiento de capital",
+      "rondas de inversión",
+      "unicornios",
+      "fintech",
+      "inteligencia artificial",
+      "SaaS",
+      "fundadores",
+      "Brasil",
+      "México",
+      "Colombia",
+      "expansión regional",
+      "M&A"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T18:16:41.712646+00:00"
+  },
+  {
+    "id": "agentes-voz-multimodal",
+    "nombre": "Agentes de Voz en Tiempo Real & Modelos Multimodales",
+    "categoria": "voz_multimodal",
+    "descripcion": "Modelos de voz de latencia ultrabaja (<200ms), WebRTC, GPT-4o Realtime, Gemini Live y generación de video comercial.",
+    "keywords": [
+      "voice agents",
+      "agentes de voz",
+      "WebRTC IA",
+      "GPT-4o Realtime",
+      "Gemini Live",
+      "ElevenLabs",
+      "Sora video",
+      "Kling AI",
+      "generación video IA"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T23:00:00.000000+00:00"
+  },
+  {
+    "id": "graphrag-knowledge",
+    "nombre": "GraphRAG & Grafos de Conocimiento Empresarial",
+    "categoria": "graphrag",
+    "descripcion": "Evolución de RAG tradicional hacia grafos de conocimiento estructurados (Neo4j, Microsoft GraphRAG) para eliminar alucinaciones.",
+    "keywords": [
+      "GraphRAG",
+      "knowledge graphs",
+      "grafos conocimiento",
+      "Neo4j IA",
+      "RAG hibrido",
+      "vector graph",
+      "ontologías IA"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T23:00:00.000000+00:00"
+  },
+  {
+    "id": "slms-borde-inferencia",
+    "nombre": "Modelos SLM en el Borde & Optimización de Inferencia",
+    "categoria": "slms_borde",
+    "descripcion": "Despliegue de modelos pequeños (1B-8B) en hardware local, cuantización GGUF/AWQ, vLLM y soberanía de datos.",
+    "keywords": [
+      "SLM",
+      "inferencia local",
+      "Ollama",
+      "vLLM",
+      "DeepSeek R1 Distill",
+      "Qwen 2.5",
+      "Phi-4",
+      "cuantización GGUF",
+      "soberanía de datos"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T23:00:00.000000+00:00"
+  },
+  {
+    "id": "fintech-fraude-ia",
+    "nombre": "IA en Finanzas, Prevención de Fraude & Core Bancario",
+    "categoria": "fintech_fraude",
+    "descripcion": "Detección de anomalías en transacciones en tiempo real, scoring crediticio aumentado y cumplimiento AML en banca de LatAm.",
+    "keywords": [
+      "prevención de fraude IA",
+      "fintech IA",
+      "scoring crediticio",
+      "banca digital",
+      "análisis de riesgo",
+      "AML compliance",
+      "ciberfraude"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T23:00:00.000000+00:00"
+  },
+  {
+    "id": "coding-agents-software",
+    "nombre": "Coding Agents & Automatización del Ciclo de Software",
+    "categoria": "coding_agents",
+    "descripcion": "Herramientas de ingeniería de software autónoma (Claude Code, Cursor, Devin, validación formal) y productividad de desarrolladores.",
+    "keywords": [
+      "Claude Code",
+      "Cursor AI",
+      "coding agent",
+      "SWE-bench",
+      "desarrollo software IA",
+      "agentes programadores",
+      "refactoring autonomo"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-17T23:00:00.000000+00:00"
   }
 ]

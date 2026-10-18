@@ -91,3 +91,55 @@ class GitHubSource(BaseSource):
 
         logger.info("GitHub: %d ítems recolectados.", len(items))
         return items
+
+    def fetch_window(self, start_date: str, end_date: str, limit: int = 25) -> List[RawItem]:
+        """Busca repositorios creados dentro de una ventana de fechas específica para backfill."""
+        items: List[RawItem] = []
+        queries = [
+            f"topic:ai created:{start_date}..{end_date} sort:stars",
+            f"topic:llm created:{start_date}..{end_date} sort:stars",
+        ]
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Radar30X-Bot",
+        }
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+
+        try:
+            with httpx.Client(timeout=self.timeout, headers=headers) as client:
+                for q in queries:
+                    params = {"q": q, "per_page": min(limit // len(queries) + 5, 20)}
+                    resp = client.get(self.SEARCH_URL, params=params)
+                    if resp.status_code != 200:
+                        continue
+                    repos = resp.json().get("items", [])
+                    for repo in repos:
+                        name = repo.get("full_name", "")
+                        desc = repo.get("description") or "Repositorio de IA en GitHub"
+                        html_url = repo.get("html_url", "")
+                        stars = int(repo.get("stargazers_count", 0))
+                        forks = int(repo.get("forks_count", 0))
+                        created_at = repo.get("created_at", "")
+                        owner = repo.get("owner", {}).get("login", "github_user")
+                        item_id = hashlib.sha256(f"gh:{html_url}".encode()).hexdigest()[:16]
+                        items.append(
+                            RawItem(
+                                id=item_id,
+                                fuente=self.name,
+                                titulo=f"Herramienta: {name}",
+                                resumen=f"{desc} (⭐ {stars} estrellas, {forks} forks)",
+                                url=html_url,
+                                autor=owner,
+                                fecha=created_at,
+                                metricas={
+                                    "estrellas": stars,
+                                    "forks": forks,
+                                    "interacciones_totales": stars + forks,
+                                },
+                            )
+                        )
+        except Exception as exc:
+            logger.error("Error al consultar backfill de GitHub: %s", exc)
+        return items
+

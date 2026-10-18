@@ -98,3 +98,52 @@ class HackerNewsSource(BaseSource):
 
         logger.info("HackerNews: %d ítems recolectados.", len(items))
         return items
+
+    def fetch_window(self, start_ts: int, end_ts: int, limit: int = 40) -> List[RawItem]:
+        """Consulta historias en un rango de fechas histórico específico para backfill."""
+        items: List[RawItem] = []
+        queries = ["AI agent OR LLM", "local AI OR enterprise AI", "Anthropic OR OpenAI"]
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                for q in queries:
+                    params = {
+                        "query": q,
+                        "tags": "story",
+                        "numericFilters": f"created_at_i>{start_ts},created_at_i<{end_ts}",
+                        "hitsPerPage": min(limit // len(queries) + 5, 20),
+                    }
+                    response = client.get(self.BASE_URL, params=params)
+                    if response.status_code != 200:
+                        continue
+                    hits = response.json().get("hits", [])
+                    for hit in hits:
+                        title = hit.get("title")
+                        if not title:
+                            continue
+                        object_id = str(hit.get("objectID", ""))
+                        url = hit.get("url") or f"https://news.ycombinator.com/item?id={object_id}"
+                        author = hit.get("author") or "hn_user"
+                        created_at = hit.get("created_at") or ""
+                        points = int(hit.get("points") or 0)
+                        num_comments = int(hit.get("num_comments") or 0)
+                        item_id = hashlib.sha256(f"hn:{object_id}".encode()).hexdigest()[:16]
+                        items.append(
+                            RawItem(
+                                id=item_id,
+                                fuente=self.name,
+                                titulo=title.strip(),
+                                resumen=f"Historia de Hacker News con {points} puntos y {num_comments} comentarios.",
+                                url=url.strip(),
+                                autor=author,
+                                fecha=created_at,
+                                metricas={
+                                    "puntos": points,
+                                    "comentarios": num_comments,
+                                    "interacciones_totales": points + num_comments,
+                                },
+                            )
+                        )
+        except Exception as exc:
+            logger.error("Error al consultar backfill de Hacker News: %s", exc)
+        return items
+

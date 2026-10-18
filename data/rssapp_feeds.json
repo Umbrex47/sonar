@@ -1,0 +1,57 @@
+[
+  {
+    "id": "rssapp-twitter-ai-leaders",
+    "nombre": "X / Twitter — Líderes de Labs & Seguridad (Sam Altman, Dario Amodei, Karpathy)",
+    "url": "https://rss.app/feeds/twitter_ai_leaders_sample.xml",
+    "plataforma": "Twitter/X",
+    "enfoque_id": "polemicas-labs",
+    "activo": true,
+    "ultimo_sync": "2026-10-17T20:30:00.000000+00:00",
+    "total_items_capturados": 28,
+    "creado_en": "2026-10-17T19:40:16.085120+00:00"
+  },
+  {
+    "id": "rssapp-tiktok-ia-herramientas",
+    "nombre": "TikTok — IA Viral, Automatizaciones con N8N y Workflows de Agentes",
+    "url": "https://rss.app/feeds/tiktok_ia_tools_sample.xml",
+    "plataforma": "TikTok",
+    "enfoque_id": "agentes-operaciones",
+    "activo": true,
+    "ultimo_sync": "2026-10-17T20:30:00.000000+00:00",
+    "total_items_capturados": 34,
+    "creado_en": "2026-10-17T19:40:16.085120+00:00"
+  },
+  {
+    "id": "rssapp-linkedin-exec-latam",
+    "nombre": "LinkedIn — CEOs, Founders y Directores de Tecnología en LatAm",
+    "url": "https://rss.app/feeds/linkedin_tech_latam_sample.xml",
+    "plataforma": "LinkedIn",
+    "enfoque_id": "ceo-desarrollo",
+    "activo": true,
+    "ultimo_sync": "2026-10-17T20:30:00.000000+00:00",
+    "total_items_capturados": 19,
+    "creado_en": "2026-10-17T19:40:16.085120+00:00"
+  },
+  {
+    "id": "rssapp-benchmarks-feed",
+    "nombre": "Web Monitor — Evaluaciones SWE-bench y Reasoning Distillation",
+    "url": "https://rss.app/feeds/swe_bench_evals_sample.xml",
+    "plataforma": "Web",
+    "enfoque_id": "benchmarks-race",
+    "activo": true,
+    "ultimo_sync": "2026-10-17T20:30:00.000000+00:00",
+    "total_items_capturados": 15,
+    "creado_en": "2026-10-17T19:40:16.085120+00:00"
+  },
+  {
+    "id": "rssapp-youtube-ai-devs",
+    "nombre": "YouTube — AI Engineering, Agentes y Arquitectura de Sistemas",
+    "url": "https://rss.app/feeds/youtube_ai_engineering_sample.xml",
+    "plataforma": "YouTube",
+    "enfoque_id": "graphrag-knowledge",
+    "activo": true,
+    "ultimo_sync": "2026-10-17T20:30:00.000000+00:00",
+    "total_items_capturados": 22,
+    "creado_en": "2026-10-17T20:30:00.000000+00:00"
+  }
+]
