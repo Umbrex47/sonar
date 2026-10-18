@@ -100,6 +100,14 @@ def clean_topic_phrase(title: str, summary: str = "") -> str:
         return "Gobernanza y Controversias en Grandes Laboratorios de IA"
     if any(k in t_lower for k in ["swe-bench", "swebench", "benchmark de razonamiento", "evals de ia"]) and any(k in t_lower for k in ["eval", "evaluacion", "coding", "razonamiento"]):
         return "Benchmarks de Rendimiento y Evaluaciones SWE-bench"
+    if any(k in t_lower for k in ["liderazgo tecnologico", "tech leadership", "engineering management", "cultura de ingenieria", "cultura ingenieria", "retencion talento tech", "gestion de equipos tech", "cto leadership"]):
+        return "Liderazgo Tecnológico y Gestión de Equipos de Ingeniería"
+    if any(k in t_lower for k in ["arquitectura de software", "cloud native", "microservicios", "monolito modular", "resiliencia infraestructura", "finops", "devops"]) and any(k in t_lower for k in ["arquitectura", "cloud", "infraestructura", "software", "sistema", "escalabilidad"]):
+        return "Arquitectura Cloud Native, Microservicios y Resiliencia"
+    if any(k in t_lower for k in ["ciberseguridad corporativa", "vulnerabilidad", "zero trust", "ransomware empresas", "seguridad cloud", "ciso"]) or ("ciberseguridad" in t_lower and any(k in t_lower for k in ["empresa", "corporativ", "amenaza", "riesgo"])):
+        return "Ciberseguridad Corporativa y Gestión de Vulnerabilidades"
+    if any(k in t_lower for k in ["venture capital latam", "startups latam", "ronda seed", "series a", "unit economics", "rule of 40", "scaleup latam", "inversion tech"]) or ("startup" in t_lower and any(k in t_lower for k in ["ronda", "capital", "inversion", "latam", "saas"])):
+        return "Ecosistema de Startups y Venture Capital en LatAm"
     if any(k in t_lower for k in ["ceo", "liderazgo", "productividad directiva", "directores"]) and any(k in t_lower for k in ["inteligencia artificial", "ia", "estrategia"]):
         return "Liderazgo y Productividad Directiva con IA"
 

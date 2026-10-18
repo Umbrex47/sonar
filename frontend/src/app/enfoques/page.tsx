@@ -417,6 +417,8 @@ export default function EnfoquesPage() {
                 <option value="polemicas">Polémicas & Labs</option>
                 <option value="benchmarks">Benchmarks & Modelos</option>
                 <option value="ceo_liderazgo">Liderazgo & CEO</option>
+                <option value="liderazgo_gestion">Liderazgo & Gestión de Equipos</option>
+                <option value="tech_arquitectura">Tecnología & Arquitectura</option>
                 <option value="oportunidades_roi">Oportunidades & ROI</option>
                 <option value="seguridad">Seguridad & Sandboxing</option>
                 <option value="general">General</option>

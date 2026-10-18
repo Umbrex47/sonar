@@ -34,7 +34,8 @@ class GitHubSource(BaseSource):
         two_weeks_ago = (datetime.now(timezone.utc) - timedelta(days=14)).strftime("%Y-%m-%d")
         queries = [
             f"topic:ai created:>{two_weeks_ago} sort:stars",
-            f"topic:llm created:>{two_weeks_ago} sort:stars",
+            f"topic:developer-tools created:>{two_weeks_ago} sort:stars",
+            f"topic:devops created:>{two_weeks_ago} sort:stars",
         ]
 
         headers = {

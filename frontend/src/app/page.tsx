@@ -207,8 +207,8 @@ export default function TendenciasPage() {
         </h1>
 
         <p className="text-[14px] text-[#72706b] font-normal leading-relaxed">
-          Descubrimiento automatizado y calibrado de tendencias de IA de los últimos 7 días.
-          Filtrado de ruido técnico, empaquetado editorial y adaptaciones estratégicas para líderes en Latinoamérica.
+          Descubrimiento automatizado y calibrado de tendencias en Tecnología, Inteligencia Artificial y Liderazgo Estratégico.
+          Filtrado de ruido técnico, empaquetado editorial y adaptaciones de impacto para líderes en Latinoamérica.
         </p>
       </section>
 

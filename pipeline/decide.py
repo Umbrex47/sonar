@@ -152,7 +152,9 @@ def _heuristic_calibrate(cluster: TopicCluster) -> ClusterDecision:
         "operaciones", "banca", "fintech", "directiv", "gerente", "equipo",
         "empresa", "costo", "roi", "productividad", "agente", "latam",
         "méxico", "colombia", "automatiz", "reemplaz", "compliance", "seguridad",
-        "ceo", "liderazgo", "founder", "estrategia"
+        "ceo", "liderazgo", "founder", "estrategia", "cto", "cultura", "talento",
+        "gestion", "arquitectura", "cloud", "ciberseguridad", "devops", "saas",
+        "scaleup", "management", "ingenieria", "venture", "startup", "retencion"
     ]
     matched_keywords = [kw for kw in latam_exec_keywords if kw in titles_text]
     matches = len(matched_keywords)

@@ -31,8 +31,8 @@ class GoogleNewsSource(BaseSource):
         import random
         base_queries: List[str] = [
             "(inteligencia artificial OR IA) (OpenAI OR Anthropic OR DeepSeek OR Gemini) when:3d",
-            "(agentes de IA OR automatización) (empresas OR startups OR ROI) when:5d",
-            "(modelos de lenguaje OR SLM OR Claude Code) when:5d",
+            "(liderazgo tecnologico OR CTO OR CEO tech) (equipos OR talento OR cultura) when:5d",
+            "(arquitectura software OR cloud OR ciberseguridad OR startups) (empresas OR LatAm) when:5d",
         ]
         focus_queries: List[str] = []
         try:
@@ -43,7 +43,7 @@ class GoogleNewsSource(BaseSource):
                 if f.keywords:
                     kw_sample = random.sample(f.keywords, min(2, len(f.keywords)))
                     kw_clause = " OR ".join(f'"{kw}"' if " " in kw else kw for kw in kw_sample)
-                    q = f"({kw_clause}) (IA OR tech OR empresas) when:5d"
+                    q = f"({kw_clause}) (tech OR liderazgo OR empresas OR IA) when:5d"
                     if q not in focus_queries:
                         focus_queries.append(q)
         except Exception as e:

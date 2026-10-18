@@ -70,22 +70,16 @@ class ChatService:
             }
             return res
 
-        # 4. Ejecución: Si se fuerza T0 expresamente, usar determinista.
-        # Si hay LLM disponible (Gemini Flash / OpenAI / Ollama), usar LLM con RAG y Ground Truth.
-        has_llm = bool(
-            os.getenv("LLM_API_KEY", "").strip()
-            or os.getenv("GEMINI_API_KEY", "").strip()
-            or os.getenv("OPENAI_API_KEY", "").strip()
-        )
-
-        if force_level == "T0":
+        # 4. Ejecución: Si se clasifica o fuerza como T0, usar determinista instantáneo (<50ms, $0 marginal).
+        # Si es pregunta abierta o nivel T1/T2 (o se fuerza T1/T2), invocar el sintetizador RAG / modelo abierto.
+        if force_level == "T0" or (decision.nivel == "T0" and force_level not in ("T1", "T2")):
             result = execute_t0_query(
                 intencion=decision.intencion,
                 pregunta=pregunta,
                 db=self.db,
                 params=decision.parametros,
             )
-        elif has_llm:
+        elif decision.intencion == "pregunta_abierta" or decision.nivel in ("T1", "T2") or force_level in ("T1", "T2"):
             from chat.open_model import answer_open_question
             ground_truth = None
             if decision.intencion != "pregunta_abierta":
@@ -108,14 +102,6 @@ class ChatService:
             )
             if decision.intencion != "pregunta_abierta":
                 result["intencion"] = decision.intencion
-        elif decision.intencion == "pregunta_abierta" or decision.nivel in ("T1", "T2"):
-            from chat.open_model import answer_open_question
-            result = answer_open_question(
-                pregunta=pregunta,
-                db=self.db,
-                force_level=force_level or decision.nivel,
-                show_sources=show_sources,
-            )
         else:
             result = execute_t0_query(
                 intencion=decision.intencion,

@@ -240,5 +240,61 @@
     ],
     "activo": true,
     "creado_en": "2026-10-17T23:00:00.000000+00:00"
+  },
+  {
+    "id": "liderazgo-cultura-tech",
+    "nombre": "Liderazgo Ejecutivo y Gestión de Talento Tech",
+    "categoria": "ceo_liderazgo",
+    "descripcion": "Modelos mentales de CEOs/CTOs, cultura de ingeniería, retención de talento técnico, delegación y equipos de alto rendimiento.",
+    "keywords": [
+      "tech leadership",
+      "cultura de ingeniería",
+      "gestión de talento tech",
+      "retención ingenieros",
+      "CTO",
+      "engineering management",
+      "productividad directiva",
+      "cultura corporativa",
+      "equipos remotos"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-18T12:00:00.000000+00:00"
+  },
+  {
+    "id": "arquitectura-cloud-ciberseguridad",
+    "nombre": "Arquitectura Cloud Native, Microservicios y Ciberseguridad",
+    "categoria": "tech_arquitectura",
+    "descripcion": "Modernización de stacks, arquitectura Cloud Native, microservicios vs monolitos, ciberseguridad corporativa, observabilidad y resiliencia.",
+    "keywords": [
+      "arquitectura de software",
+      "cloud native",
+      "ciberseguridad corporativa",
+      "microservicios",
+      "DevOps",
+      "resiliencia infraestructura",
+      "finops",
+      "APIs",
+      "observabilidad"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-18T12:00:00.000000+00:00"
+  },
+  {
+    "id": "startups-scaleups-vc-negocios",
+    "nombre": "Ecosistema de Startups, Venture Capital y Negocios en LatAm",
+    "categoria": "oportunidades_roi",
+    "descripcion": "Rondas de inversión, unit economics (SaaS, Rule of 40), rentabilidad de empresas tecnológicas, M&A y transformación digital corporativa.",
+    "keywords": [
+      "venture capital LatAm",
+      "SaaS B2B",
+      "unit economics",
+      "Rule of 40",
+      "rondas seed series A",
+      "scaleup",
+      "rentabilidad tech",
+      "M&A tecnologico"
+    ],
+    "activo": true,
+    "creado_en": "2026-10-18T12:00:00.000000+00:00"
   }
 ]

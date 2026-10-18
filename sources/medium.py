@@ -22,7 +22,9 @@ class MediumSource(BaseSource):
     name: str = "Medium"
     FEED_URLS = [
         "https://medium.com/feed/tag/artificial-intelligence",
-        "https://medium.com/feed/tag/generative-ai",
+        "https://medium.com/feed/tag/technology",
+        "https://medium.com/feed/tag/leadership",
+        "https://medium.com/feed/tag/software-engineering",
     ]
 
     def fetch(self, limit: int = 30) -> List[RawItem]:
@@ -44,7 +46,9 @@ class MediumSource(BaseSource):
                         ai_keywords = [
                             "ai", "ia", "agent", "llm", "slm", "model", "rag",
                             "architecture", "enterprise", "prompt", "machine learning",
-                            "deep learning", "neural", "automatiz", "datos", "data"
+                            "deep learning", "neural", "automatiz", "datos", "data",
+                            "leadership", "management", "cto", "engineering", "startup",
+                            "security", "product", "culture", "talent", "devops", "cloud"
                         ]
                         for entry in feed.entries[: limit // len(self.FEED_URLS) + 10]:
                             title = getattr(entry, "title", "")

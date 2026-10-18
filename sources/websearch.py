@@ -23,10 +23,11 @@ logger = logging.getLogger(__name__)
 # Consultas semilla de alto impacto para Radar30X
 DEFAULT_SEARCH_QUERIES = [
     "inteligencia artificial agentes empresas 2026",
+    "liderazgo tecnologico gestion equipos ingenieria 2026",
+    "arquitectura software cloud ciberseguridad empresas 2026",
+    "startups tech latam venture capital rentabilidad 2026",
+    "cultura ingenieria productividad retencion talento tech 2026",
     "OpenAI Anthropic controversia seguridad 2026",
-    "DeepSeek R1 benchmarks razonamiento modelos",
-    "reemplazo RPA agentes autonomos operaciones",
-    "CEO liderazgo IA productividad empresas",
     "modelos SLM inferencia local costos nube",
 ]
 

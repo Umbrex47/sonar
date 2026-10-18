@@ -102,9 +102,38 @@ def run_score(db: Database, similarity_threshold: float = 75.0) -> List[ScoredTo
     return ranked
 
 
-def render_terminal_report(scored_topics: List[ScoredTopic], top_n: int = 10) -> None:
+def render_terminal_report(
+    scored_topics: List[ScoredTopic],
+    top_n: int = 10,
+    report_file: Optional[str] = None,
+) -> None:
     """Renderiza el Top N en terminal con formato de tabla y detalles editoriales."""
-    top = scored_topics[:top_n]
+    top_items = []
+    if report_file and os.path.exists(report_file):
+        try:
+            with open(report_file, "r", encoding="utf-8") as rf:
+                rdata = json.load(rf)
+                top_items = rdata.get("top_temas", [])[:top_n]
+        except Exception:
+            top_items = []
+
+    if not top_items:
+        top = scored_topics[:top_n]
+        for i, st in enumerate(top, 1):
+            top_items.append({
+                "posicion": i,
+                "tema": st.cluster.tema_canonico,
+                "fase": st.decision.fase,
+                "crecimiento": st.crecimiento_label,
+                "confianza_jev": st.decision.confianza,
+                "encaje_audiencia": st.decision.encaje_audiencia,
+                "formato": st.decision.formato,
+                "fuentes": st.cluster.fuentes,
+                "por_que": st.por_que or "Señal emergente con tracción en fuentes públicas.",
+                "por_que_audiencia": st.por_que_audiencia or "Alta relevancia para líderes y equipos en LatAm.",
+                "adaptacion_30x": st.adaptacion_30x or "Recomendación editorial para 30X.",
+                "cambio_posicion": getattr(st, "cambio_posicion", "="),
+            })
 
     if RICH_AVAILABLE and console:
         table = Table(
@@ -113,7 +142,7 @@ def render_terminal_report(scored_topics: List[ScoredTopic], top_n: int = 10) ->
             show_header=True,
             header_style="bold cyan",
         )
-        table.add_column("#", style="bold yellow", width=3, justify="right")
+        table.add_column("#", style="bold yellow", width=8, justify="right")
         table.add_column("TEMA", style="bold white", width=36)
         table.add_column("FASE", style="magenta", width=14)
         table.add_column("CREC.", style="green", width=12, justify="right")
@@ -122,19 +151,21 @@ def render_terminal_report(scored_topics: List[ScoredTopic], top_n: int = 10) ->
         table.add_column("FORMATO", style="yellow", width=13)
         table.add_column("FUENTES", style="dim", width=22)
 
-        for i, st in enumerate(top, 1):
+        for it in top_items:
             short_sources = ",".join(
                 s.replace(" (Captura)", "").replace("GoogleNews", "GNews").replace("HackerNews", "HN")
-                for s in st.cluster.fuentes[:4]
+                for s in it.get("fuentes", [])[:4]
             )
+            delta = it.get("cambio_posicion", "")
+            pos_label = f"#{it.get('posicion')} {delta}".strip()
             table.add_row(
-                str(i),
-                st.cluster.tema_canonico[:35],
-                st.decision.fase,
-                st.crecimiento_label.split(" ")[0],
-                f"{st.decision.confianza:.2f}",
-                f"{st.decision.encaje_audiencia:.2f}",
-                st.decision.formato,
+                pos_label,
+                it.get("tema", "")[:35],
+                it.get("fase", ""),
+                it.get("crecimiento", "").split(" ")[0],
+                f"{it.get('confianza_jev', 0.85):.2f}",
+                f"{it.get('encaje_audiencia', 0.9):.2f}",
+                it.get("formato", ""),
                 short_sources,
             )
 
@@ -142,39 +173,42 @@ def render_terminal_report(scored_topics: List[ScoredTopic], top_n: int = 10) ->
         console.print(table)
         console.print()
 
-        for i, st in enumerate(top, 1):
+        for it in top_items:
             content = (
-                f"[bold cyan]→ Señal:[/] {st.por_que}\n"
-                f"[bold magenta]→ Encaje Audiencia:[/] {st.por_que_audiencia}\n"
-                f"[bold green]→ Adaptación 30X:[/] {st.adaptacion_30x}"
+                f"[bold cyan]→ Señal:[/] {it.get('por_que')}\n"
+                f"[bold magenta]→ Encaje Audiencia:[/] {it.get('por_que_audiencia')}\n"
+                f"[bold green]→ Adaptación 30X:[/] {it.get('adaptacion_30x')}"
             )
+            delta_badge = f" ({it.get('cambio_posicion')})" if it.get("cambio_posicion") else ""
             console.print(
                 Panel(
                     content,
-                    title=f"[bold yellow]#{i} {st.cluster.tema_canonico}[/]",
+                    title=f"[bold yellow]#{it.get('posicion')} {it.get('tema')}{delta_badge}[/]",
                     border_style="dim",
                     padding=(0, 1),
                 )
             )
     else:
         # Formato fallback de terminal estándar
-        header = f"{'#':<3} {'TEMA':<36} {'FASE':<15} {'CREC.':<10} {'CONF.':<7} {'ENCAJE':<7} {'FORMATO':<13} {'FUENTES'}"
+        header = f"{'#':<8} {'TEMA':<36} {'FASE':<15} {'CREC.':<10} {'CONF.':<7} {'ENCAJE':<7} {'FORMATO':<13} {'FUENTES'}"
         print("\n" + "=" * len(header))
         print("RADAR DE CONTENIDO 30X — TOP 10 TENDENCIAS DE IA")
         print("=" * len(header))
         print(header)
         print("-" * len(header))
 
-        for i, st in enumerate(top, 1):
-            fuentes_str = ",".join(st.cluster.fuentes[:3])
+        for it in top_items:
+            fuentes_str = ",".join(it.get("fuentes", [])[:3])
+            delta = it.get("cambio_posicion", "")
+            pos_label = f"#{it.get('posicion')} {delta}".strip()
             print(
-                f"{i:<3} {st.cluster.tema_canonico[:35]:<36} {st.decision.fase:<15} "
-                f"{st.crecimiento_label.split(' ')[0]:<10} {st.decision.confianza:<7.2f} "
-                f"{st.decision.encaje_audiencia:<7.2f} {st.decision.formato:<13} {fuentes_str}"
+                f"{pos_label:<8} {it.get('tema', '')[:35]:<36} {it.get('fase', ''):<15} "
+                f"{it.get('crecimiento', '').split(' ')[0]:<10} {it.get('confianza_jev', 0.85):<7.2f} "
+                f"{it.get('encaje_audiencia', 0.9):<7.2f} {it.get('formato', ''):<13} {fuentes_str}"
             )
-            print(f"   -> Señal: {st.por_que}")
-            print(f"   -> Encaje Audiencia: {st.por_que_audiencia}")
-            print(f"   -> Adaptación 30X: {st.adaptacion_30x}\n")
+            print(f"   -> Señal: {it.get('por_que')}")
+            print(f"   -> Encaje Audiencia: {it.get('por_que_audiencia')}")
+            print(f"   -> Adaptación 30X: {it.get('adaptacion_30x')}\n")
 
 
 def build_and_save_report(

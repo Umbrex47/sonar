@@ -52,7 +52,9 @@ class NewslettersSource(BaseSource):
             "automatiz", "startup", "founder", "operaciones", "banca", "fintech",
             "inversion", "venture", "latam", "software", "tecnologia", "deepseek",
             "openai", "anthropic", "meta", "llama", "prompt", "benchmark", "eval",
-            "evals", "reasoning", "coding", "workflow", "inference", "gpu", "token"
+            "evals", "reasoning", "coding", "workflow", "inference", "gpu", "token",
+            "leadership", "liderazgo", "ceo", "cto", "management", "cultura", "talento",
+            "retencion", "scaleup", "saas", "cloud", "ciberseguridad", "devops", "arquitectura"
         ]
 
         inherently_ai_publications = {

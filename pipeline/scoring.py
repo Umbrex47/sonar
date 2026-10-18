@@ -73,7 +73,10 @@ def calculate_topic_score(cluster: TopicCluster, decision: ClusterDecision) -> T
         for k in [
             "operacion", "banca", "fintech", "costo", "empresa", "seguridad",
             "sandbox", "rpa", "compliance", "auditor", "desarrollo", "slm",
-            "workflow", "razonamiento", "productividad", "rrhh", "reemplaz"
+            "workflow", "razonamiento", "productividad", "rrhh", "reemplaz",
+            "liderazgo", "lider", "ceo", "cto", "cultura", "talento", "gestion",
+            "estrategia", "arquitectura", "cloud", "ciberseguridad", "devops",
+            "saas", "scaleup", "management", "ingenieria", "venture", "startup"
         ]
     )
     impact_multiplier = 0.40 if is_toy else (1.20 if has_enterprise_impact else 1.0)

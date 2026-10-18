@@ -61,12 +61,12 @@ class YouTubeSource(BaseSource):
             with httpx.Client(timeout=self.timeout) as client:
                 # 1. Search videos recientes sobre IA con foco empresarial y rotación de queries
                 import random
-                seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
                 queries_pool = [
                     "(agentes de IA OR OpenAI OR Anthropic OR benchmarks IA OR CEO) empresas automatización",
+                    "(liderazgo tecnologico OR engineering management OR cultura ingenieria OR CTO) tech",
+                    "(arquitectura de software OR cloud native OR microservicios OR ciberseguridad) 2026",
                     "(Claude Code OR DeepSeek OR Gemini OR LLM local) programación desarrollo",
-                    "(GraphRAG OR SLM OR automatización de procesos OR IA empresas)",
-                    "(IA agentes autónomos OR WebRTC voz OR modelos razonamiento)",
+                    "(startups tech LatAm OR venture capital OR modelos SaaS) negocios",
                 ]
                 selected_q = random.choice(queries_pool)
                 search_params = {
