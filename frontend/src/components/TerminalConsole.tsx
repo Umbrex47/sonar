@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Terminal,
   Play,
@@ -15,6 +15,8 @@ import {
   Activity,
   Clock,
   Sparkles,
+  GripHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import { useRadar } from "../context/RadarContext";
 
@@ -38,12 +40,101 @@ export function TerminalConsole({ embedded = false }: TerminalConsoleProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
 
+  // Estado para arrastrar (drag & drop) la terminal modal
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ clientX: number; clientY: number; startX: number; startY: number }>({
+    clientX: 0,
+    clientY: 0,
+    startX: 0,
+    startY: 0,
+  });
+
   // Auto-scroll al final cuando llegan nuevos logs
   useEffect(() => {
     if (autoScroll && logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
   }, [runState.logs, autoScroll]);
+
+  // Manejo de eventos de drag para la ventana modal
+  const startDrag = useCallback((clientX: number, clientY: number) => {
+    if (!terminalRef.current) return;
+    const rect = terminalRef.current.getBoundingClientRect();
+    dragStartRef.current = {
+      clientX,
+      clientY,
+      startX: rect.left,
+      startY: rect.top,
+    };
+    setPosition({ x: rect.left, y: rect.top });
+    setIsDragging(true);
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (embedded) return;
+    if ((e.target as HTMLElement).closest("button, span[data-control], a, input")) {
+      return;
+    }
+    startDrag(e.clientX, e.clientY);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (embedded) return;
+    if ((e.target as HTMLElement).closest("button, span[data-control], a, input")) {
+      return;
+    }
+    if (e.touches.length > 0) {
+      startDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!terminalRef.current) return;
+      const dx = e.clientX - dragStartRef.current.clientX;
+      const dy = e.clientY - dragStartRef.current.clientY;
+      const modalWidth = terminalRef.current.offsetWidth || 680;
+      const modalHeight = terminalRef.current.offsetHeight || 380;
+      const maxX = Math.max(10, window.innerWidth - modalWidth - 10);
+      const maxY = Math.max(10, window.innerHeight - modalHeight - 10);
+      const newX = Math.max(10, Math.min(maxX, dragStartRef.current.startX + dx));
+      const newY = Math.max(10, Math.min(maxY, dragStartRef.current.startY + dy));
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!terminalRef.current || e.touches.length === 0) return;
+      const dx = e.touches[0].clientX - dragStartRef.current.clientX;
+      const dy = e.touches[0].clientY - dragStartRef.current.clientY;
+      const modalWidth = terminalRef.current.offsetWidth || 680;
+      const modalHeight = terminalRef.current.offsetHeight || 380;
+      const maxX = Math.max(10, window.innerWidth - modalWidth - 10);
+      const maxY = Math.max(10, window.innerHeight - modalHeight - 10);
+      const newX = Math.max(10, Math.min(maxX, dragStartRef.current.startX + dx));
+      const newY = Math.max(10, Math.min(maxY, dragStartRef.current.startY + dy));
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleEndDrag = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleEndDrag);
+    window.addEventListener("touchmove", handleTouchMove);
+    window.addEventListener("touchend", handleEndDrag);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleEndDrag);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleEndDrag);
+    };
+  }, [isDragging]);
 
   const handleCopyLogs = () => {
     const text = runState.logs.map((l) => `[${l.time}] ${l.text}`).join("\n");
@@ -59,17 +150,46 @@ export function TerminalConsole({ embedded = false }: TerminalConsoleProps) {
 
   return (
     <div
-      className={`rounded-[10px] overflow-hidden border border-[#27251e]/30 bg-[#0d0e11] text-[#e4e4e7] shadow-xl transition-all duration-200 ${
+      ref={terminalRef}
+      style={
+        !embedded && position
+          ? {
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              bottom: "auto",
+              right: "auto",
+              transition: isDragging ? "none" : "box-shadow 0.2s ease",
+            }
+          : undefined
+      }
+      className={`rounded-[10px] overflow-hidden border border-[#27251e]/30 bg-[#0d0e11] text-[#e4e4e7] shadow-2xl ${
+        isDragging ? "select-none ring-2 ring-[#17c0fd]/40 cursor-grabbing" : ""
+      } ${
         embedded
           ? "w-full"
-          : "fixed bottom-5 right-5 z-50 w-[95vw] sm:w-[680px] max-h-[85vh] flex flex-col"
+          : `${position ? "fixed" : "fixed bottom-5 right-5"} z-50 w-[95vw] sm:w-[680px] max-h-[85vh] flex flex-col`
       }`}
     >
       {/* Terminal Title Bar */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#16181d] border-b border-[#27251e]/50 select-none">
+      <div
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        className={`flex items-center justify-between px-3.5 py-2.5 bg-[#16181d] border-b border-[#27251e]/50 select-none ${
+          !embedded ? "cursor-grab active:cursor-grabbing" : ""
+        }`}
+        title={!embedded ? "Haz clic y arrastra para mover la consola a cualquier parte" : undefined}
+      >
         {/* Left: Window Controls & Title */}
         <div className="flex items-center space-x-2.5">
-          <div className="flex items-center space-x-1.5">
+          {!embedded && (
+            <div
+              className="text-[#71717a] hover:text-[#faf8f5] transition mr-0.5 cursor-grab"
+              title="Arrastrar consola"
+            >
+              <GripHorizontal className="w-4 h-4" />
+            </div>
+          )}
+          <div className="flex items-center space-x-1.5" data-control="true">
             <span
               onClick={() => setIsTerminalOpen(false)}
               className="w-2.5 h-2.5 rounded-full bg-[#ef4444] cursor-pointer hover:opacity-80 transition"
@@ -122,6 +242,16 @@ export function TerminalConsole({ embedded = false }: TerminalConsoleProps) {
             <div className="px-2 py-0.5 rounded-[3px] bg-[#27251e]/40 text-[#71717a] text-[10px] font-mono">
               IDLE
             </div>
+          )}
+
+          {position && !embedded && (
+            <button
+              onClick={() => setPosition(null)}
+              title="Restablecer posición al rincón inferior"
+              className="p-1 rounded-[3px] text-[#a1a1aa] hover:text-[#faf8f5] hover:bg-[#27251e]/40 transition"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
           )}
 
           <button
